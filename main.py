@@ -6,6 +6,7 @@ from fastapi.concurrency import asynccontextmanager
 from app.config.db_config import mongodb,MONGO_URI,DATABASE_NAME
 from app.model.session_data import SessionData
 from app.config.db_config import mongodb
+from app.controller.user_controller import user_route
 
 app = FastAPI()
 
@@ -17,6 +18,8 @@ app.add_middleware(
     allow_methods=["*"],  # Allows all methods
     allow_headers=["*"],  # Allows all headers
 )
+
+app.include_router(user_route,tags=["User"])
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

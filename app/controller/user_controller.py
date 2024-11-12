@@ -11,7 +11,7 @@ async def register_user(user: User):
     result = await UserService.register_user(user)
     return result
 
-@user_route.get("/login")
+@user_route.get("/create_user")
 async def get_id():
     user = await mongodb.collections["user"].insert_one({"session_ids": []})  # Await the insert operation
     return {"user_id": str(user.inserted_id)}  # Convert ObjectId to string

@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from bson import ObjectId
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.concurrency import asynccontextmanager
@@ -44,15 +45,27 @@ async def websocket_session(websocket: WebSocket):
             # Wait for data from the frontend
             data = await websocket.receive_json()
 
-            if (data["event"] == "on_close"):
-                session_data = SessionData(**data)  # Parse the data into the SessionData model
+            if data["event"] == "on_close":
+                user_id = data["user_id"]
+                
+                # Parse incoming data into the SessionData model
+                session_data = SessionData(**data)
 
+                # Prepare the session data document
                 document = session_data.dict()
                 document["session_start"] = document["session_start"] or datetime.now(timezone.utc).isoformat()
                 document["session_end"] = document["session_end"] or datetime.now(timezone.utc).isoformat()
 
-                await mongodb.collections["session_data"].insert_one(document)
-                print(f"Session data saved: {document}")
+                # Insert the session document and get the new session ID
+                session_result = await mongodb.collections["session_data"].insert_one(document)
+                session_id = session_result.inserted_id
 
+                # Update the user document by pushing the session ID into the session_ids list
+                await mongodb.collections["user"].update_one(
+                    {"_id": ObjectId(user_id)},
+                    {"$push": {"session_ids": session_id}}
+                )
+                
+                print(f"Session data saved: {document}")
     except WebSocketDisconnect:
         print("WebSocket connection closed")

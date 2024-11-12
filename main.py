@@ -43,15 +43,16 @@ async def websocket_session(websocket: WebSocket):
         while True:
             # Wait for data from the frontend
             data = await websocket.receive_json()
-            session_data = SessionData(**data)  # Parse the data into the SessionData model
 
-            # Insert session data into MongoDB
-            document = session_data.dict()
-            document["session_start"] = document["session_start"] or datetime.now(timezone.utc).isoformat()
-            document["session_end"] = document["session_end"] or datetime.now(timezone.utc).isoformat()
+            if (data["event"] == "on_close"):
+                session_data = SessionData(**data)  # Parse the data into the SessionData model
 
-            await mongodb.collections["session_data"].insert_one(document)
-            print(f"Session data saved: {document}")
+                document = session_data.dict()
+                document["session_start"] = document["session_start"] or datetime.now(timezone.utc).isoformat()
+                document["session_end"] = document["session_end"] or datetime.now(timezone.utc).isoformat()
+
+                await mongodb.collections["session_data"].insert_one(document)
+                print(f"Session data saved: {document}")
 
     except WebSocketDisconnect:
         print("WebSocket connection closed")

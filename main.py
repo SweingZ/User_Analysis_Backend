@@ -50,14 +50,15 @@ async def websocket_session(websocket: WebSocket):
 
             if data["event"] == "on_close":
                 user_id = data["user_id"]
-                
+
                 # Parse incoming data into the SessionData model
                 session_data = SessionData(**data)
+                website = data.get("website")
 
                 # Prepare the session data document
                 document = session_data.dict()
-                document["session_start"] = document["session_start"] or datetime.now(timezone.utc).isoformat()
-                document["session_end"] = document["session_end"] or datetime.now(timezone.utc).isoformat()
+                document["session_start"] = document["session_start"] or datetime.now(timezone.utc)
+                document["session_end"] = document["session_end"] or datetime.now(timezone.utc)
 
                 # Insert the session document and get the new session ID
                 session_result = await mongodb.collections["session_data"].insert_one(document)
@@ -69,6 +70,33 @@ async def websocket_session(websocket: WebSocket):
                     {"$push": {"session_ids": session_id}}
                 )
                 
+                # Upsert counts in the counts collection
+                update_query = {
+                    "$inc": {
+                        f"page_counts.{path}": 1 for path in session_data.path_history or []
+                    }
+                }
+
+                if session_data.device_stats:
+                    os_name = session_data.device_stats.os
+                    browser_name = session_data.device_stats.browser
+                    device_name = session_data.device_stats.device
+                    
+                    if os_name:
+                        update_query["$inc"][f"os_counts.{os_name}"] = 1
+                    if browser_name:
+                        update_query["$inc"][f"browser_counts.{browser_name}"] = 1
+                    if device_name:
+                        update_query["$inc"][f"device_counts.{device_name}"] = 1
+
+                # Upsert Query for counts collection
+                await mongodb.collections["counts"].update_one(
+                    {"website": website},
+                    update_query,
+                    upsert=True
+                )
+
                 print(f"Session data saved: {document}")
+
     except WebSocketDisconnect:
         print("WebSocket connection closed")

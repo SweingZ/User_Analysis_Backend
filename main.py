@@ -76,6 +76,9 @@ async def websocket_session(websocket: WebSocket):
                         f"page_counts.{path}": 1 for path in session_data.path_history or []
                     }
                 }
+                
+                if session_data.bounce:
+                    update_query["$inc"]["bounce_counts"] = 1
 
                 if session_data.device_stats:
                     os_name = session_data.device_stats.os

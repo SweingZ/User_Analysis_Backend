@@ -8,8 +8,8 @@ class DeviceStats(BaseModel):
     device : Optional[str] = None
 
 class Location(BaseModel):
-    latitude : Optional[str] = None
-    longitude : Optional[str] = None
+    latitude : Optional[float] = None
+    longitude : Optional[float] = None
 
 class SessionData(BaseModel):
     session_start : Optional[datetime] = None

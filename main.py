@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from typing import List
 from bson import ObjectId
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,6 +8,7 @@ from app.config.db_config import mongodb,MONGO_URI,DATABASE_NAME
 from app.model.session_data import SessionData
 from app.config.db_config import mongodb
 from app.controller.user_controller import user_route
+from app.controller.dashboard_controller import dashboard_route
 
 app = FastAPI()
 
@@ -20,6 +22,7 @@ app.add_middleware(
 )
 
 app.include_router(user_route,tags=["User"])
+app.include_router(dashboard_route,tags=["Dashboard"])
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -39,10 +42,15 @@ async def root():
     return {"message": "Hello, MongoDB connected successfully!"}
 
 
+active_connections: List[WebSocket] = []
+
+
 # WebSocket endpoint to handle session data
 @app.websocket("/ws/session")
 async def websocket_session(websocket: WebSocket):
     await websocket.accept()  # Accept the WebSocket connection
+    active_connections.append(websocket)
+    print(f"Connected: {len(active_connections)} active connections")
     try:
         while True:
             # Wait for data from the frontend
@@ -102,4 +110,5 @@ async def websocket_session(websocket: WebSocket):
                 print(f"Session data saved: {document}")
 
     except WebSocketDisconnect:
-        print("WebSocket connection closed")
+        active_connections.remove(websocket)
+        print(f"Disconnected: {len(active_connections)} active connections")

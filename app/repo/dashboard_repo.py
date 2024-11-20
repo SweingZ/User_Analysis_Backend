@@ -22,6 +22,10 @@ class DashboardRepo:
     @staticmethod
     async def get_bounce_count():
         return await mongodb.collections["counts"].find_one({}, {"bounce_counts": 1, "_id": 0})
+    
+    @staticmethod
+    async def get_count_data():
+        return await mongodb.collections["counts"].find_one({})
 
     @staticmethod
     async def get_total_visits_in_range(start_date: datetime, end_date: datetime):

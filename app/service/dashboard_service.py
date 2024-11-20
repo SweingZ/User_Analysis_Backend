@@ -8,6 +8,9 @@ class DashboardService:
         if page_name == "MAIN":
             result = await DashboardService.get_main_data()
             return result
+        elif page_name == "DEVICE_STATS":
+            result = await DashboardService.get_device_stats_data()
+            return result
 
     ####### HELPER METHODS #############
     @staticmethod
@@ -38,6 +41,25 @@ class DashboardService:
             "avg_session_time_change_rate": avg_session_time_change_rate,
             "total_visitors_change_rate": user_joined_change_rate
         }
+    
+    @staticmethod
+    async def get_device_stats_data():
+        counts_data = await DashboardRepo.get_count_data()
+
+        return {
+            "os_counts": counts_data.get("os_counts", {}),
+            "browser_counts": counts_data.get("browser_counts", {}),
+            "device_counts": counts_data.get("device_counts", {}),
+            "referers": [
+                {"source": "Google", "count": 5200},
+                {"source": "Facebook", "count": 2800},
+                {"source": "Instagram", "count": 2100},
+                {"source": "Twitter", "count": 1800},
+                {"source": "LinkedIn", "count": 1500},
+                {"source": "Direct", "count": 3600}
+            ]
+        }
+
 
     @staticmethod
     async def get_avg_session_time():

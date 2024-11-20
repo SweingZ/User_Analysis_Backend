@@ -36,3 +36,10 @@ class DashboardRepo:
             "session_start": {"$gte": start_date},
             "session_end": {"$lte": end_date},
         }).to_list(length=None)
+    
+    @staticmethod
+    async def get_users_joined_in_range(start_date, end_date):
+        return await mongodb.collections["user"].count_documents(
+            {"date_joined": {"$gte": start_date, "$lte": end_date}}
+        )
+

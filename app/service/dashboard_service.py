@@ -22,6 +22,7 @@ class DashboardService:
         # Fetch comparison metrics
         total_visits_change_rate = await DashboardService.get_total_visits_change_rate()
         avg_session_time_change_rate = await DashboardService.get_avg_session_time_change_rate()
+        user_joined_change_rate = await DashboardService.get_user_joined_change_rate()
 
         # Calculate bounce rate
         bounce_rate = (bounce_count["bounce_counts"] / total_visits) * 100 if total_visits else 0  # Avoid division by zero
@@ -35,6 +36,7 @@ class DashboardService:
             "bounce_rate": bounce_rate,
             "total_visits_change_rate": total_visits_change_rate,
             "avg_session_time_change_rate": avg_session_time_change_rate,
+            "total_visitors_change_rate": user_joined_change_rate
         }
 
     @staticmethod
@@ -99,3 +101,20 @@ class DashboardService:
             return total_duration / len(session_data)
         else:
             return 0
+        
+
+    @staticmethod
+    async def get_user_joined_change_rate():
+        now = datetime.utcnow()
+        start_of_this_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        start_of_last_month = (start_of_this_month - timedelta(days=1)).replace(day=1)
+        end_of_last_month = start_of_this_month - timedelta(seconds=1)
+
+        # Fetch current and previous month user join counts
+        users_joined_this_month = await DashboardRepo.get_users_joined_in_range(start_of_this_month, now)
+        users_joined_last_month = await DashboardRepo.get_users_joined_in_range(start_of_last_month, end_of_last_month)
+
+        if users_joined_last_month == 0:
+            return "No Data for Last Month"
+        change_rate = ((users_joined_this_month - users_joined_last_month) / users_joined_last_month) * 100
+        return change_rate

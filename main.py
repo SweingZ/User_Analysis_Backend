@@ -58,6 +58,7 @@ async def websocket_session(websocket: WebSocket):
 
             if data["event"] == "on_close":
                 user_id = data["user_id"]
+                print(data)
 
                 # Parse incoming data into the SessionData model
                 session_data = SessionData(**data)

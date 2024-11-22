@@ -91,7 +91,7 @@ class DashboardService:
         last_month_visits = await DashboardRepo.get_total_visits_in_range(start_of_last_month, end_of_last_month)
 
         if last_month_visits == 0:
-            return "No Data for Last Month"
+            return 0
         change_rate = ((current_month_visits - last_month_visits) / last_month_visits) * 100
         return change_rate
 
@@ -108,7 +108,7 @@ class DashboardService:
         last_avg_time = await DashboardService.get_avg_session_time_in_range(start_of_last_month, end_of_last_month)
 
         if last_avg_time == 0:
-            return "No Data for Last Month"
+            return 0
         change_rate = ((current_avg_time - last_avg_time) / last_avg_time) * 100
         return change_rate
 
@@ -138,6 +138,6 @@ class DashboardService:
         users_joined_last_month = await DashboardRepo.get_users_joined_in_range(start_of_last_month, end_of_last_month)
 
         if users_joined_last_month == 0:
-            return "No Data for Last Month"
+            return 0
         change_rate = ((users_joined_this_month - users_joined_last_month) / users_joined_last_month) * 100
         return change_rate

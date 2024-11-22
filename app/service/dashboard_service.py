@@ -39,7 +39,8 @@ class DashboardService:
             "bounce_rate": bounce_rate,
             "total_visits_change_rate": total_visits_change_rate,
             "avg_session_time_change_rate": avg_session_time_change_rate,
-            "total_visitors_change_rate": user_joined_change_rate
+            "total_visitors_change_rate": user_joined_change_rate,
+            "total_active_users": 1
         }
     
     @staticmethod

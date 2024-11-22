@@ -3,28 +3,56 @@ from typing import List, Optional
 from pydantic import BaseModel
 
 class DeviceStats(BaseModel):
-    os : Optional[str] = None
-    browser : Optional[str] = None
-    device : Optional[str] = None
+    deviceType: Optional[str] = None
+    browser: Optional[str] = None
+    os: Optional[str] = None
 
 class Location(BaseModel):
-    latitude : Optional[float] = None
-    longitude : Optional[float] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+class VideoSessionInfo(BaseModel):
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    duration: Optional[float] = None
+    completed: Optional[bool] = None
+
+class VideoData(BaseModel):
+    content_type: Optional[str] = None
+    title: Optional[str] = None
+    started_watching: Optional[datetime] = None
+    last_interaction: Optional[datetime] = None
+    total_watch_time: Optional[float] = None
+    session_information: Optional[List[VideoSessionInfo]] = None
+    ended: Optional[bool] = None
+
+class ButtonData(BaseModel):
+    content_type: Optional[str] = None
+    click: Optional[int] = None
+    content_title: Optional[str] = None
+    contents_type: Optional[str] = None
 
 class ContentData(BaseModel):
-    content_type:  Optional[str] = None
-    content_title:  Optional[str] = None
-    start_watch_time:  Optional[str] = None
-    ended_watch_time: Optional[str] = None
+    content_type: Optional[str] = None
+    content_title: Optional[str] = None
+    start_watch_time: Optional[datetime] = None
+    ended_watch_time: Optional[datetime] = None
     scrolled_depth: Optional[str] = None
+    isactive: Optional[bool] = None
 
-class SessionData(BaseModel):
-    session_start : Optional[datetime] = None
-    session_end : Optional[datetime] = None
-    path_history : Optional[List[str]] = None
-    bounce : Optional[bool] = None
-    device_stats : Optional[DeviceStats] = None
-    location : Optional[Location] = None
+class Interaction(BaseModel):
+    video_data: Optional[List[VideoData]] = None
+    button_data: Optional[List[ButtonData]] = None
     contents_data: Optional[List[ContentData]] = None
 
-
+class SessionData(BaseModel):
+    event: Optional[str] = None
+    user_id: Optional[str] = None
+    session_start: Optional[datetime] = None
+    session_end: Optional[datetime] = None
+    path_history: Optional[List[str]] = None
+    bounce: Optional[bool] = None
+    website: Optional[str] = None
+    location: Optional[Location] = None
+    device_stats: Optional[DeviceStats] = None
+    interaction: Optional[Interaction] = None

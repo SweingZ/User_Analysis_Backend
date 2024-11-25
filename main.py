@@ -9,6 +9,7 @@ from app.model.session_data import SessionData
 from app.config.db_config import mongodb
 from app.controller.user_controller import user_route
 from app.controller.dashboard_controller import dashboard_route
+from app.controller.admin_controller import admin_route
 
 app = FastAPI()
 
@@ -23,6 +24,7 @@ app.add_middleware(
 
 app.include_router(user_route,tags=["User"])
 app.include_router(dashboard_route,tags=["Dashboard"])
+app.include_router(admin_route, tags= ["Admin"])
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -57,12 +59,23 @@ async def websocket_session(websocket: WebSocket):
             data = await websocket.receive_json()
 
             if data["event"] == "on_close":
-                user_id = data["user_id"]
-                print(data)
-
                 # Parse incoming data into the SessionData model
                 session_data = SessionData(**data)
-                website = data.get("website")
+
+                user_id = session_data.get("user_id")
+                domain_name = session_data.get("domain_name")
+
+                # Find the corresponding Admin document by domain_name
+                admin_doc = await mongodb.collections["admin"].find_one({"domain_name": domain_name})
+
+                if admin_doc:
+                    # If admin exists, update the users_list
+                    existing_users = set(admin_doc.get("users_list", []))
+                    existing_users.add(user_id)  
+                    await mongodb.collections["admin"].update_one(
+                        {"domain_name": domain_name},
+                        {"$set": {"users_list": list(existing_users)}}
+                    )
 
                 # Prepare the session data document
                 document = session_data.dict()
@@ -92,7 +105,7 @@ async def websocket_session(websocket: WebSocket):
                 if session_data.device_stats:
                     os_name = session_data.device_stats.os
                     browser_name = session_data.device_stats.browser
-                    device_name = session_data.device_stats.device
+                    device_name = session_data.device_stats.deviceType
                     
                     if os_name:
                         update_query["$inc"][f"os_counts.{os_name}"] = 1
@@ -103,7 +116,7 @@ async def websocket_session(websocket: WebSocket):
 
                 # Upsert Query for counts collection
                 await mongodb.collections["counts"].update_one(
-                    {"website": website},
+                    {"domain_name": domain_name},
                     update_query,
                     upsert=True
                 )

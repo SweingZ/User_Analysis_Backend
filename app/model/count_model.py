@@ -2,7 +2,7 @@ from typing import Dict
 from pydantic import BaseModel
 
 class CountModel(BaseModel):
-    website: str
+    domain_name: str
     page_counts: Dict[str, int]
     os_counts: Dict[str, int]
     browser_counts: Dict[str, int]
@@ -11,7 +11,7 @@ class CountModel(BaseModel):
     class Config:
         schema_extra = {
             "example": {
-                "website": "example.com",
+                "domain_name": "example.com",
                 "page_counts": {
                     "home": 120,
                     "about": 45,

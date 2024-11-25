@@ -52,7 +52,7 @@ class SessionData(BaseModel):
     session_end: Optional[datetime] = None
     path_history: Optional[List[str]] = None
     bounce: Optional[bool] = None
-    website: Optional[str] = None
+    domain_name: Optional[str] = None
     location: Optional[Location] = None
     device_stats: Optional[DeviceStats] = None
     interaction: Optional[Interaction] = None

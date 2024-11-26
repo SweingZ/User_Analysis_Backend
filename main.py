@@ -117,7 +117,13 @@ async def update_counts(session_data: SessionData, domain_name: str):
     }
 
     if session_data.bounce:
+        # Increment overall bounce counts
         update_query["$inc"]["bounce_counts"] = 1
+
+        # Increment bounce count for the single page in path_history
+        if session_data.path_history:
+            bounce_page = session_data.path_history[0]
+            update_query["$inc"][f"bounce_counts_per_page.{bounce_page}"] = 1
 
     if session_data.device_stats:
         os_name = session_data.device_stats.os

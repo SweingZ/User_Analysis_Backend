@@ -7,6 +7,8 @@ class CountModel(BaseModel):
     os_counts: Dict[str, int]
     browser_counts: Dict[str, int]
     device_counts: Dict[str, int]
+    bounce_counts: Dict[str, int]
+    bounce_counts_per_page: Dict[str, int]
 
     class Config:
         schema_extra = {
@@ -31,6 +33,11 @@ class CountModel(BaseModel):
                     "Mobile": 100,
                     "Desktop": 110,
                     "Tablet": 10
+                },
+                "bounce_counts": 4,
+                "bounce_counts_per_page": {
+                    "home": 12,
+                    "about": 3
                 }
             }
         }

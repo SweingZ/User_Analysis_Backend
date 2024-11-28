@@ -56,7 +56,7 @@ class Interaction(BaseModel):
 class SessionData(BaseModel):
     event: Optional[str] = None
     user_id: Optional[str] = None
-    user_name: Optional[str] = None
+    username: Optional[str] = None
     session_start: Optional[datetime] = None
     session_end: Optional[datetime] = None
     path_history: Optional[List[str]] = None

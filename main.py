@@ -125,19 +125,37 @@ async def update_admin_user_list(user_id: str, domain_name: str):
 
 
 async def save_session_data(session_data: SessionData, user_id: str) -> ObjectId:
-    """Save the session data to the database and return the session ID."""
+    """Save the session data to the database and handle the user's session IDs."""
+    # Prepare the session document
     document = session_data.dict()
     document["session_start"] = document["session_start"] or datetime.now(timezone.utc)
     document["session_end"] = document["session_end"] or datetime.now(timezone.utc)
 
+    # Insert the session document into the "session_data" collection
     session_result = await mongodb.collections["session_data"].insert_one(document)
     session_id = session_result.inserted_id
 
-    await mongodb.collections["user"].update_one(
-        {"_id": ObjectId(user_id)},
-        {"$push": {"session_ids": session_id}}
-    )
+    # Check if the user exists in the "user" collection
+    existing_user = await mongodb.collections["user"].find_one({"_id": ObjectId(user_id)})
+
+    if existing_user:
+        # If user exists, push the session ID into their "session_ids"
+        await mongodb.collections["user"].update_one(
+            {"_id": ObjectId(user_id)},
+            {"$push": {"session_ids": session_id}}
+        )
+    else:
+        # If user does not exist, create a new user document
+        new_user = {
+            "_id": ObjectId(user_id),
+            "username": session_data.username,
+            "domain_name": session_data.domain_name,
+            "session_ids": [session_id],
+        }
+        await mongodb.collections["user"].insert_one(new_user)
+
     return session_id
+
 
 
 async def update_counts(session_data: SessionData, domain_name: str):

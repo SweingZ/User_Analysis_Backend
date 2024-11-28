@@ -40,14 +40,23 @@ class ContentData(BaseModel):
     scrolled_depth: Optional[str] = None
     isactive: Optional[bool] = None
 
+class ChildButtonsData(BaseModel):
+    content_type: Optional[str] = None
+    click: Optional[int] = None
+    content_title: Optional[str] = None
+    contents_type: Optional[str] = None
+    parent_content_title: Optional[str] = None
+
 class Interaction(BaseModel):
     video_data: Optional[List[VideoData]] = None
     button_data: Optional[List[ButtonData]] = None
     contents_data: Optional[List[ContentData]] = None
+    child_buttons_data: Optional[List[ChildButtonsData]] = None
 
 class SessionData(BaseModel):
     event: Optional[str] = None
     user_id: Optional[str] = None
+    user_name: Optional[str] = None
     session_start: Optional[datetime] = None
     session_end: Optional[datetime] = None
     path_history: Optional[List[str]] = None

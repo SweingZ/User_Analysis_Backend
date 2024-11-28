@@ -9,3 +9,8 @@ admin_route = APIRouter()
 async def register_admin(admin: Admin):
     result = await AdminService.register_admin(admin)
     return result
+
+@admin_route.post("/admin/login")
+async def login_admin(admin: Admin):
+    result = await AdminService.login_admin(admin)
+    return result

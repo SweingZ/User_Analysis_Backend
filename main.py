@@ -127,7 +127,7 @@ async def update_admin_user_list(user_id: str, domain_name: str):
 async def save_session_data(session_data: SessionData, user_id: str) -> ObjectId:
     """Save the session data to the database and handle the user's session IDs."""
     # Prepare the session document
-    document = session_data.dict()
+    document = session_data.dict(exclude={"username"})
     document["session_start"] = document["session_start"] or datetime.now(timezone.utc)
     document["session_end"] = document["session_end"] or datetime.now(timezone.utc)
 

@@ -14,6 +14,9 @@ class DashboardService:
         elif page_name == "DEVICE_STATS":
             result = await DashboardService.get_device_stats_data(admin_id)
             return result
+        elif page_name == "CONTENT":
+            result = await DashboardService.get_content_metrics_data(admin_id)
+            return result
 
     ####### HELPER METHODS #############
     @staticmethod
@@ -53,14 +56,6 @@ class DashboardService:
         }
     
     @staticmethod
-    async def get_domain_name(admin_id: str):
-        admin_data = await AdminRepo.find_admin_by_id(admin_id)
-        if not admin_data:
-            raise HTTPException(status_code=404,detail="Admin not found")
-        domain_name = admin_data["domain_name"]
-        return domain_name
-    
-    @staticmethod
     async def get_device_stats_data(admin_id: str):
         # Fetch domain name
         domain_name = await DashboardService.get_domain_name(admin_id)
@@ -81,6 +76,19 @@ class DashboardService:
                 {"source": "Direct", "count": 3600}
             ]
         }
+    
+    @staticmethod
+    async def get_content_metrics_data(admin_id: str):
+        pass
+    
+    @staticmethod
+    async def get_domain_name(admin_id: str):
+        admin_data = await AdminRepo.find_admin_by_id(admin_id)
+        if not admin_data:
+            raise HTTPException(status_code=404,detail="Admin not found")
+        domain_name = admin_data["domain_name"]
+        return domain_name
+    
 
 
     @staticmethod

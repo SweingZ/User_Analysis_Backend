@@ -53,6 +53,11 @@ class Interaction(BaseModel):
     contents_data: Optional[List[ContentData]] = None
     child_buttons_data: Optional[List[ChildButtonsData]] = None
 
+class Referrer(BaseModel):
+    utm_source: Optional[str] = None
+    utm_medium: Optional[str] = None
+    utm_campaign: Optional[str] = None
+
 class SessionData(BaseModel):
     event: Optional[str] = None
     user_id: Optional[str] = None
@@ -65,3 +70,4 @@ class SessionData(BaseModel):
     location: Optional[Location] = None
     device_stats: Optional[DeviceStats] = None
     interaction: Optional[Interaction] = None
+    referrer: Optional[Referrer] = None

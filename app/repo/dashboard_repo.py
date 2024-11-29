@@ -52,5 +52,12 @@ class DashboardRepo:
                 "domain_name": domain_name
             }
         )
+    
+    @staticmethod
+    async def get_location_data(domain_name: str):
+        return await mongodb.collections["session_data"].find(
+            {"domain_name": domain_name},  # Filter by domain_name
+            {"_id": 0, "location": 1}      # Project only the location field
+        ).to_list(length=None)
 
 

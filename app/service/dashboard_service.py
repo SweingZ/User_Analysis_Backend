@@ -60,11 +60,13 @@ class DashboardService:
         # Fetch domain name
         domain_name = await DashboardService.get_domain_name(admin_id)
         counts_data = await DashboardRepo.get_count_data(domain_name)
+        location_data = await DashboardRepo.get_location_data(domain_name)
 
         return {
             "os_counts": counts_data.get("os_counts", {}),
             "browser_counts": counts_data.get("browser_counts", {}),
             "device_counts": counts_data.get("device_counts", {}),
+            "location_data": location_data,
             "referers": [
                 {"source": "Google", "count": 5200},
                 {"source": "Facebook", "count": 2800},

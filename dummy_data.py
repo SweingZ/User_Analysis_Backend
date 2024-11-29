@@ -31,7 +31,7 @@ count_model_data = [
         "os_counts": {"Windows": 80, "MacOS": 60, "Linux": 30},
         "browser_counts": {"Chrome": 120, "Firefox": 40, "Safari": 20},
         "device_counts": {"Mobile": 100, "Desktop": 70, "Tablet": 30},
-        "bounce_counts": 10,
+        "bounce_counts": 2,
         "bounce_counts_per_page": {"home": 5, "about": 3, "contact": 2}
     },
     {
@@ -87,7 +87,7 @@ additional_session_data = [
                     "content_title": "Learn More About Us",
                     "start_watch_time": datetime(2024, 10, 15, 9, 50, 0),
                     "ended_watch_time": datetime(2024, 10, 15, 10, 0, 0),
-                    "scrolled_depth": "75%",
+                    "scrolled_depth": 75,
                     "isactive": True
                 }
             ],
@@ -134,7 +134,7 @@ additional_session_data = [
                     "content_title": "Product A",
                     "start_watch_time": datetime(2024, 8, 20, 16, 10, 0),
                     "ended_watch_time": datetime(2024, 8, 20, 16, 15, 0),
-                    "scrolled_depth": "90%",
+                    "scrolled_depth": 90,
                     "isactive": True
                 }
             ],

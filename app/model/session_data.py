@@ -37,7 +37,7 @@ class ContentData(BaseModel):
     content_title: Optional[str] = None
     start_watch_time: Optional[datetime] = None
     ended_watch_time: Optional[datetime] = None
-    scrolled_depth: Optional[str] = None
+    scrolled_depth: Optional[float] = None
     isactive: Optional[bool] = None
 
 class ChildButtonsData(BaseModel):

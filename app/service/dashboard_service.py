@@ -115,7 +115,7 @@ class DashboardService:
                     scroll_depth = content.get("scrolled_depth", 0)
                     if scroll_depth is not None:
                         # Store scroll depth for each content
-                        content_scroll_depths[content_id].append(float(scroll_depth.strip('%')) / 100.0)
+                        content_scroll_depths[content_id].append(scroll_depth)
 
             # Count button clicks
             for button in button_data:

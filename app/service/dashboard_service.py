@@ -2,6 +2,7 @@ from fastapi import HTTPException
 from app.repo.admin_repo import AdminRepo
 from app.repo.dashboard_repo import DashboardRepo
 from datetime import datetime, timedelta
+from app.utils.shared_state import active_connections
 
 
 class DashboardService:
@@ -19,6 +20,10 @@ class DashboardService:
     async def get_main_data(admin_id: str):
         # Fetch domain name
         domain_name = await DashboardService.get_domain_name(admin_id)
+
+        # Fetch active users for the domain
+        active_users_count = len(active_connections.get(domain_name, []))
+
         # Fetch current metrics
         total_visitors = await DashboardRepo.get_total_visitors(domain_name)
         total_visits = await DashboardRepo.get_total_visits(domain_name)
@@ -44,7 +49,7 @@ class DashboardService:
             "total_visits_change_rate": total_visits_change_rate,
             "avg_session_time_change_rate": avg_session_time_change_rate,
             "total_visitors_change_rate": user_joined_change_rate,
-            "total_active_users": 1
+            "total_active_users": active_users_count
         }
     
     @staticmethod

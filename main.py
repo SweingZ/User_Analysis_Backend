@@ -10,6 +10,7 @@ from app.config.db_config import mongodb
 from app.controller.user_controller import user_route
 from app.controller.dashboard_controller import dashboard_route
 from app.controller.admin_controller import admin_route
+from app.utils.shared_state import active_connections
 
 app = FastAPI()
 
@@ -39,10 +40,6 @@ app.router.lifespan_context = lifespan
 @app.get("/")
 async def root():
     return {"message": "Hello, MongoDB connected successfully!"}
-
-
-# WebSocket endpoint
-active_connections: Dict[str,List[str]] = {}
 
 @app.websocket("/ws/session")
 async def websocket_session(

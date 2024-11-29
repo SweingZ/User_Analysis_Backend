@@ -150,6 +150,7 @@ async def save_session_data(session_data: SessionData, user_id: str) -> ObjectId
             "_id": ObjectId(user_id),
             "username": session_data.username,
             "domain_name": session_data.domain_name,
+            "date_joined": datetime.utcnow(),
             "session_ids": [session_id],
         }
         await mongodb.collections["user"].insert_one(new_user)

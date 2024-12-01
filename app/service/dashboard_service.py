@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import HTTPException
 from app.repo.admin_repo import AdminRepo
 from app.repo.dashboard_repo import DashboardRepo
@@ -24,20 +25,20 @@ class DashboardService:
         # Fetch domain name
         domain_name = await DashboardService.get_domain_name(admin_id)
 
+        # Use asyncio.gather to fetch data concurrently
+        total_visitors, total_visits, average_session_time, page_view_analysis, bounce_count, total_visits_change_rate, avg_session_time_change_rate, user_joined_change_rate = await asyncio.gather(
+            DashboardRepo.get_total_visitors(domain_name),
+            DashboardRepo.get_total_visits(domain_name),
+            DashboardService.get_avg_session_time(domain_name),
+            DashboardRepo.get_page_view_analysis(domain_name),
+            DashboardRepo.get_bounce_count(domain_name),
+            DashboardService.get_total_visits_change_rate(domain_name),
+            DashboardService.get_avg_session_time_change_rate(domain_name),
+            DashboardService.get_user_joined_change_rate(domain_name)
+        )
+
         # Fetch active users for the domain
         active_users_count = len(active_connections.get(domain_name, []))
-
-        # Fetch current metrics
-        total_visitors = await DashboardRepo.get_total_visitors(domain_name)
-        total_visits = await DashboardRepo.get_total_visits(domain_name)
-        average_session_time = await DashboardService.get_avg_session_time(domain_name)
-        page_view_analysis = await DashboardRepo.get_page_view_analysis(domain_name)
-        bounce_count = await DashboardRepo.get_bounce_count(domain_name)
-
-        # Fetch comparison metrics
-        total_visits_change_rate = await DashboardService.get_total_visits_change_rate(domain_name)
-        avg_session_time_change_rate = await DashboardService.get_avg_session_time_change_rate(domain_name)
-        user_joined_change_rate = await DashboardService.get_user_joined_change_rate(domain_name)
 
         # Calculate bounce rate
         bounce_rate = (bounce_count["bounce_counts"] / total_visits) * 100 if total_visits else 0  # Avoid division by zero
@@ -57,25 +58,23 @@ class DashboardService:
     
     @staticmethod
     async def get_device_stats_data(admin_id: str):
-        # Fetch domain name
         domain_name = await DashboardService.get_domain_name(admin_id)
+        
         counts_data = await DashboardRepo.get_count_data(domain_name)
-        location_data = await DashboardRepo.get_location_data(domain_name)
+        
+        location_and_referrer_data = await DashboardRepo.get_location_and_referrer_data(domain_name)
+        
+        locations = (item.get("location") for item in location_and_referrer_data if "location" in item)
+        referrers = (item.get("referrer") for item in location_and_referrer_data if "referrer" in item)
 
         return {
             "os_counts": counts_data.get("os_counts", {}),
             "browser_counts": counts_data.get("browser_counts", {}),
             "device_counts": counts_data.get("device_counts", {}),
-            "location_data": location_data,
-            "referers": [
-                {"source": "Google", "count": 5200},
-                {"source": "Facebook", "count": 2800},
-                {"source": "Instagram", "count": 2100},
-                {"source": "Twitter", "count": 1800},
-                {"source": "LinkedIn", "count": 1500},
-                {"source": "Direct", "count": 3600}
-            ]
+            "location_data": locations,
+            "referrers": referrers
         }
+
 
     @staticmethod
     async def get_content_metrics_data(admin_id: str):

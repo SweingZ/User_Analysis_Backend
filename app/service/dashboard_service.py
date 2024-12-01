@@ -173,7 +173,7 @@ class DashboardService:
 
     @staticmethod
     async def get_total_visits_change_rate(domain_name: str):
-        now, start_of_this_month, start_of_last_month, end_of_last_month = DashboardService.get_month_range
+        now, start_of_this_month, start_of_last_month, end_of_last_month = DashboardService.get_month_range()
 
         # Get current and last month's total visits
         current_month_visits = await DashboardRepo.get_total_visits_in_range(start_of_this_month, now, domain_name)
@@ -186,7 +186,7 @@ class DashboardService:
     
     @staticmethod
     async def get_user_joined_change_rate(domain_name: str):
-        now, start_of_this_month, start_of_last_month, end_of_last_month = DashboardService.get_month_range
+        now, start_of_this_month, start_of_last_month, end_of_last_month = DashboardService.get_month_range()
 
         # Fetch current and previous month user join counts
         users_joined_this_month = await DashboardRepo.get_users_joined_in_range(start_of_this_month, now, domain_name)
@@ -199,7 +199,7 @@ class DashboardService:
 
     @staticmethod
     async def get_avg_session_time_change_rate(domain_name: str):
-        now, start_of_this_month, start_of_last_month, end_of_last_month = DashboardService.get_month_range
+        now, start_of_this_month, start_of_last_month, end_of_last_month = DashboardService.get_month_range()
 
         # Get average session time for current and last month
         current_avg_time = await DashboardService.get_avg_session_time_in_range(start_of_this_month, now, domain_name)

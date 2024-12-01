@@ -89,7 +89,7 @@ class DashboardService:
         video_view_count = defaultdict(int)
         total_watch_time = defaultdict(float)
         content_view_count = defaultdict(int)
-        content_scroll_depths = defaultdict(list)  # Track scroll depths for each content
+        content_scroll_depths = defaultdict(list)  
         button_clicks = defaultdict(int)
 
         # Iterate through session data to aggregate the required metrics
@@ -173,11 +173,7 @@ class DashboardService:
 
     @staticmethod
     async def get_total_visits_change_rate(domain_name: str):
-        # Define current and previous month ranges
-        now = datetime.utcnow()
-        start_of_this_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        start_of_last_month = (start_of_this_month - timedelta(days=1)).replace(day=1)
-        end_of_last_month = start_of_this_month - timedelta(seconds=1)
+        now, start_of_this_month, start_of_last_month, end_of_last_month = DashboardService.get_month_range
 
         # Get current and last month's total visits
         current_month_visits = await DashboardRepo.get_total_visits_in_range(start_of_this_month, now, domain_name)
@@ -187,14 +183,23 @@ class DashboardService:
             return 0
         change_rate = ((current_month_visits - last_month_visits) / last_month_visits) * 100
         return change_rate
+    
+    @staticmethod
+    async def get_user_joined_change_rate(domain_name: str):
+        now, start_of_this_month, start_of_last_month, end_of_last_month = DashboardService.get_month_range
+
+        # Fetch current and previous month user join counts
+        users_joined_this_month = await DashboardRepo.get_users_joined_in_range(start_of_this_month, now, domain_name)
+        users_joined_last_month = await DashboardRepo.get_users_joined_in_range(start_of_last_month, end_of_last_month, domain_name)
+
+        if users_joined_last_month == 0:
+            return 0
+        change_rate = ((users_joined_this_month - users_joined_last_month) / users_joined_last_month) * 100
+        return change_rate
 
     @staticmethod
     async def get_avg_session_time_change_rate(domain_name: str):
-        # Define current and previous month ranges
-        now = datetime.utcnow()
-        start_of_this_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        start_of_last_month = (start_of_this_month - timedelta(days=1)).replace(day=1)
-        end_of_last_month = start_of_this_month - timedelta(seconds=1)
+        now, start_of_this_month, start_of_last_month, end_of_last_month = DashboardService.get_month_range
 
         # Get average session time for current and last month
         current_avg_time = await DashboardService.get_avg_session_time_in_range(start_of_this_month, now, domain_name)
@@ -218,19 +223,14 @@ class DashboardService:
         else:
             return 0
         
-
     @staticmethod
-    async def get_user_joined_change_rate(domain_name: str):
+    def get_month_range():
         now = datetime.utcnow()
         start_of_this_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         start_of_last_month = (start_of_this_month - timedelta(days=1)).replace(day=1)
         end_of_last_month = start_of_this_month - timedelta(seconds=1)
+        return now, start_of_this_month, start_of_last_month, end_of_last_month
 
-        # Fetch current and previous month user join counts
-        users_joined_this_month = await DashboardRepo.get_users_joined_in_range(start_of_this_month, now, domain_name)
-        users_joined_last_month = await DashboardRepo.get_users_joined_in_range(start_of_last_month, end_of_last_month, domain_name)
+        
 
-        if users_joined_last_month == 0:
-            return 0
-        change_rate = ((users_joined_this_month - users_joined_last_month) / users_joined_last_month) * 100
-        return change_rate
+

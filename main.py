@@ -94,17 +94,127 @@ async def websocket_session(
 
 async def handle_session_data(session_data: SessionData):
     """Main handler for session data processing."""
-    user_id = session_data.get("user_id")
-    domain_name = session_data.get("domain_name")
+    user_id = session_data.user_id
+    domain_name = session_data.domain_name
 
     if not user_id or not domain_name:
         print("Invalid session data. Skipping...")
         return
 
+    # Process content metrics
+    await save_content_metrics(session_data)
+
+    # Update admin user list
     await update_admin_user_list(user_id, domain_name)
+    
+    # Save session data and update counts
     session_id = await save_session_data(session_data, user_id)
     await update_counts(session_data, domain_name)
+    
     print(f"Processed session for user: {user_id}, domain: {domain_name}")
+
+
+async def save_content_metrics(session_data: SessionData):
+    """Save or update content metrics based on the session data."""
+
+    domain_name = session_data.domain_name
+    interaction = session_data.interaction
+    bulk_updates = []
+
+    # Process video metrics
+    if interaction.video_data:
+        for video in interaction.video_data:
+            update_query = {
+                "domain_name": domain_name,
+                "metrics.title": video.title,
+                "metrics.type": "VIDEO"
+            }
+            update_data = {
+                "$set": {"domain_name": domain_name},
+                "$inc": {
+                    "metrics.$.views": 1,
+                    "metrics.$.avg_watch_time": video.total_watch_time or 0,
+                    "metrics.$.avg_completion_rate": 100 if video.completed else 0,
+                }
+            }
+            bulk_updates.append({
+                "update_one": {
+                    "filter": update_query,
+                    "update": update_data,
+                    "upsert": True
+                }
+            })
+
+    # Process button metrics
+    if interaction.button_data:
+        for button in interaction.button_data:
+            update_query = {
+                "domain_name": domain_name,
+                "metrics.title": button.content_title,
+                "metrics.type": "button"
+            }
+            update_data = {
+                "$set": {"domain_name": domain_name},
+                "$inc": {"metrics.$.clicks": button.click or 1}
+            }
+            bulk_updates.append({
+                "update_one": {
+                    "filter": update_query,
+                    "update": update_data,
+                    "upsert": True
+                }
+            })
+
+    # Process content metrics
+    if interaction.contents_data:
+        for content in interaction.contents_data:
+            update_query = {
+                "domain_name": domain_name,
+                "metrics.title": content.content_title,
+                "metrics.type": "content"
+            }
+            update_data = {
+                "$set": {"domain_name": domain_name},
+                "$inc": {
+                    "metrics.$.views": 1,
+                    "metrics.$.avg_scroll_depth": content.scrolled_depth or 0
+                }
+            }
+            bulk_updates.append({
+                "update_one": {
+                    "filter": update_query,
+                    "update": update_data,
+                    "upsert": True
+                }
+            })
+
+    # Process child button metrics
+    if interaction.child_buttons_data:
+        for child_button in interaction.child_buttons_data:
+            update_query = {
+                "domain_name": domain_name,
+                "metrics.title": child_button.content_title,
+                "metrics.type": "button"
+            }
+            update_data = {
+                "$set": {"domain_name": domain_name},
+                "$inc": {"metrics.$.clicks": child_button.click or 1}
+            }
+            bulk_updates.append({
+                "update_one": {
+                    "filter": update_query,
+                    "update": update_data,
+                    "upsert": True
+                }
+            })
+
+    # Execute bulk operations if there are updates
+    if bulk_updates:
+        # Use Motor's bulk_write method
+        result = await mongodb.collections["content"].bulk_write(bulk_updates)
+        print(f"Updated content metrics for domain: {domain_name}, modified count: {result.modified_count}")
+    else:
+        print("No updates required for content metrics.")
 
 
 async def update_admin_user_list(user_id: str, domain_name: str):

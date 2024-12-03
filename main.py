@@ -314,7 +314,7 @@ async def update_counts(session_data: SessionData, domain_name: str):
         upsert=True
     )
 
-def calculate_content_completion_rate_refined(
+def calculate_content_completion_rate(
     word_count: Optional[int],
     scrolled_depth: Optional[float],
     watch_time: Optional[float]

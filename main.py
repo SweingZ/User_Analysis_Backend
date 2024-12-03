@@ -134,7 +134,7 @@ async def save_content_metrics(session_data: SessionData):
                 "$inc": {
                     "metrics.$.views": 1,
                     "metrics.$.sum_watch_time": video.total_watch_time or 0,
-                    "metrics.$.sum_completion_rate": 100 if video.completed else 0,
+                    "metrics.$.sum_completion_rate": 100 if video.ended else 0,
                 }
             }
             bulk_updates.append({

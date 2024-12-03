@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Dict, List
+from typing import Dict, List, Optional
 from bson import ObjectId
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -55,7 +55,6 @@ async def websocket_session(
         domain_name (str): Domain name passed as a query parameter.
         user_id (str): User ID passed as a query parameter.
     """
-    # Check for valid query parameters
     if not domain_name or not user_id:
         raise HTTPException(status_code=400, detail="Missing domain_name or user_id")
 
@@ -73,7 +72,6 @@ async def websocket_session(
 
     try:
         while True:
-            # Listen for messages from the client
             data = await websocket.receive_text()
             session_data =  SessionData(**data)
             await handle_session_data(session_data)
@@ -168,11 +166,17 @@ async def save_content_metrics(session_data: SessionData):
     # Process content metrics
     if interaction.contents_data:
         for content in interaction.contents_data:
-            # Calculate watch time from start and end times
             watch_time = (
                 (content.ended_watch_time - content.start_watch_time).total_seconds()
                 if content.start_watch_time and content.ended_watch_time
                 else 0
+            )
+
+            # Calculate the completion rate
+            completion_rate = calculate_content_completion_rate(
+                word_count=content.word_count,
+                scrolled_depth=content.scrolled_depth,
+                watch_time=watch_time
             )
 
             update_query = {
@@ -185,7 +189,8 @@ async def save_content_metrics(session_data: SessionData):
                 "$inc": {
                     "metrics.$.views": 1,
                     "metrics.$.sum_scroll_depth": content.scrolled_depth or 0,
-                    "metrics.$.sum_watch_time": watch_time
+                    "metrics.$.sum_watch_time": watch_time,
+                    "metrics.$.sum_completion_rate": completion_rate
                 }
             }
             bulk_updates.append({
@@ -308,3 +313,29 @@ async def update_counts(session_data: SessionData, domain_name: str):
         update_query,
         upsert=True
     )
+
+def calculate_content_completion_rate_refined(
+    word_count: Optional[int],
+    scrolled_depth: Optional[float],
+    watch_time: Optional[float]
+) -> float:
+    avg_reading_speed = 200
+    estimated_reading_time = (word_count / avg_reading_speed) * 60 if word_count else 0
+    
+    scroll_completion = (scrolled_depth / 100) if scrolled_depth is not None else 0
+    time_completion = (
+        min(watch_time / estimated_reading_time, 1.0) if estimated_reading_time > 0 else 0
+    )
+    
+    # Penalize mismatched engagement
+    if scroll_completion > 0.8 and time_completion < 0.3:
+        time_completion *= 0.5  # Halve the time weight
+    
+    # Weighted combination
+    scroll_weight = 0.6
+    time_weight = 0.4
+    completion_rate = (scroll_weight * scroll_completion) + (time_weight * time_completion)
+    
+    return completion_rate * 100
+
+

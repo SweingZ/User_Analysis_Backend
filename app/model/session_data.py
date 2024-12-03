@@ -35,6 +35,7 @@ class ButtonData(BaseModel):
 class ContentData(BaseModel):
     content_type: Optional[str] = None
     content_title: Optional[str] = None
+    word_count: Optional[int] = None
     start_watch_time: Optional[datetime] = None
     ended_watch_time: Optional[datetime] = None
     scrolled_depth: Optional[float] = None

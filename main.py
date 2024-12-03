@@ -327,15 +327,21 @@ def calculate_content_completion_rate(
         min(watch_time / estimated_reading_time, 1.0) if estimated_reading_time > 0 else 0
     )
     
-    # Penalize mismatched engagement
-    if scroll_completion > 0.8 and time_completion < 0.3:
-        time_completion *= 0.5  # Halve the time completion
+    if scroll_completion == 1 and time_completion < 1:
+        total_completion = time_completion
+
+    elif scroll_completion < 1 and time_completion == 1:
+        total_completion = scroll_completion
+
+    elif scroll_completion < 1 and time_completion < 1:
+        total_completion = scroll_completion + time_completion / 2
+
+    else:
+        total_completion = 1
     
-    # Weighted combination
-    scroll_weight = 0.6
-    time_weight = 0.4
-    completion_rate = (scroll_weight * scroll_completion) + (time_weight * time_completion)
+    return total_completion * 100
+
+
     
-    return completion_rate * 100
 
 

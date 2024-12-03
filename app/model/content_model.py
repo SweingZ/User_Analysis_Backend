@@ -6,9 +6,9 @@ class Metric(BaseModel):
     title: str
     views: Optional[int] = Field(default=None, ge=0)
     likes: Optional[int] = Field(default=None, ge=0)
-    avg_scroll_depth: Optional[float] = Field(default=None, ge=0)
-    avg_watch_time: Optional[float] = Field(default=None, ge=0)
-    avg_completion_rate: Optional[float] = Field(default=None, ge=0, le=100)
+    sum_scroll_depth: Optional[float] = Field(default=None, ge=0)
+    sum_watch_time: Optional[float] = Field(default=None, ge=0)
+    sum_completion_rate: Optional[float] = Field(default=None, ge=0, le=100)
     clicks: Optional[int] = Field(default=None, ge=0)
 
 class Content(BaseModel):

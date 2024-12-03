@@ -133,8 +133,8 @@ async def save_content_metrics(session_data: SessionData):
                 "$set": {"domain_name": domain_name},
                 "$inc": {
                     "metrics.$.views": 1,
-                    "metrics.$.avg_watch_time": video.total_watch_time or 0,
-                    "metrics.$.avg_completion_rate": 100 if video.completed else 0,
+                    "metrics.$.sum_watch_time": video.total_watch_time or 0,
+                    "metrics.$.sum_completion_rate": 100 if video.completed else 0,
                 }
             }
             bulk_updates.append({
@@ -151,7 +151,7 @@ async def save_content_metrics(session_data: SessionData):
             update_query = {
                 "domain_name": domain_name,
                 "metrics.title": button.content_title,
-                "metrics.type": "button"
+                "metrics.type": "BUTTON"
             }
             update_data = {
                 "$set": {"domain_name": domain_name},
@@ -168,16 +168,24 @@ async def save_content_metrics(session_data: SessionData):
     # Process content metrics
     if interaction.contents_data:
         for content in interaction.contents_data:
+            # Calculate watch time from start and end times
+            watch_time = (
+                (content.ended_watch_time - content.start_watch_time).total_seconds()
+                if content.start_watch_time and content.ended_watch_time
+                else 0
+            )
+
             update_query = {
                 "domain_name": domain_name,
                 "metrics.title": content.content_title,
-                "metrics.type": "content"
+                "metrics.type": "CONTENT"
             }
             update_data = {
                 "$set": {"domain_name": domain_name},
                 "$inc": {
                     "metrics.$.views": 1,
-                    "metrics.$.avg_scroll_depth": content.scrolled_depth or 0
+                    "metrics.$.sum_scroll_depth": content.scrolled_depth or 0,
+                    "metrics.$.sum_watch_time": watch_time
                 }
             }
             bulk_updates.append({
@@ -194,7 +202,7 @@ async def save_content_metrics(session_data: SessionData):
             update_query = {
                 "domain_name": domain_name,
                 "metrics.title": child_button.content_title,
-                "metrics.type": "button"
+                "metrics.type": "BUTTON"
             }
             update_data = {
                 "$set": {"domain_name": domain_name},

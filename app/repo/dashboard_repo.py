@@ -27,6 +27,10 @@ class DashboardRepo:
     @staticmethod
     async def get_count_data(domain_name: str):
         return await mongodb.collections["counts"].find_one({"domain_name":domain_name})
+    
+    @staticmethod
+    async def get_content_data(domain_name: str):
+        return await mongodb.collections["content"].find_one({"domain_name":domain_name})
 
     @staticmethod
     async def get_total_visits_in_range(start_date: datetime, end_date: datetime, domain_name: str):

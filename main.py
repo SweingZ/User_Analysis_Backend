@@ -329,7 +329,7 @@ def calculate_content_completion_rate(
     
     # Penalize mismatched engagement
     if scroll_completion > 0.8 and time_completion < 0.3:
-        time_completion *= 0.5  # Halve the time weight
+        time_completion *= 0.5  # Halve the time completion
     
     # Weighted combination
     scroll_weight = 0.6

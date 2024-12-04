@@ -28,6 +28,7 @@ class Content(BaseModel):
                         "likes": 4,
                         "avg_scroll_depth": 80.12,
                         "avg_completion_rate": 77,
+                        "cta_clicks": 10
                     },
                     {
                         "type": "video",

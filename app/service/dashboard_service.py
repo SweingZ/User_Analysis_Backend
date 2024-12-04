@@ -80,12 +80,13 @@ class DashboardService:
 
     @staticmethod
     async def get_content_metrics_data(admin_id: str) -> Dict:
+        # Get the domain name using the admin_id
         domain_name = await DashboardService.get_domain_name(admin_id)
 
-        # Fetch the single content data for the domain
+        # Fetch the content data as a dictionary
         content_data = await DashboardRepo.get_content_data(domain_name)
 
-        if not content_data or not content_data.metrics:
+        if not content_data or not content_data.get("metrics"):
             return {
                 "video_metrics": {},
                 "content_metrics": {},
@@ -97,25 +98,26 @@ class DashboardService:
         content_metrics = defaultdict(dict)
         button_clicks = defaultdict(int)
 
-        # Process the metrics from the content object
-        metrics = content_data.metrics
+        # Process the metrics from the content data
+        metrics = content_data["metrics"]
         for metric in metrics:
-            if metric.type == "VIDEO":
-                video_metrics[metric.title] = {
-                    "views": metric.views or 0,
-                    "likes": metric.likes or 0,
-                    "avg_watch_time": (metric.sum_watch_time / metric.views) if metric.views else 0,
-                    "avg_completion_rate": (metric.sum_completion_rate / metric.views) if metric.views else 0
+            if metric["type"] == "VIDEO":
+                video_metrics[metric["title"]] = {
+                    "views": metric.get("views", 0),
+                    "likes": metric.get("likes", 0),
+                    "avg_watch_time": (metric.get("sum_watch_time", 0) / metric["views"]) if metric.get("views") else 0,
+                    "avg_completion_rate": (metric.get("sum_completion_rate", 0) / metric["views"]) if metric.get("views") else 0
                 }
-            elif metric.type == "CONTENT":
-                content_metrics[metric.title] = {
-                    "views": metric.views or 0,
-                    "likes": metric.likes or 0,
-                    "avg_scroll_depth": (metric.sum_scroll_depth / metric.views) if metric.views else 0,
-                    "avg_completion_rate": (metric.sum_completion_rate / metric.views) if metric.views else 0
+            elif metric["type"] == "CONTENT":
+                content_metrics[metric["title"]] = {
+                    "views": metric.get("views", 0),
+                    "likes": metric.get("likes", 0),
+                    "avg_scroll_depth": (metric.get("sum_scroll_depth", 0) / metric["views"]) if metric.get("views") else 0,
+                    "avg_completion_rate": (metric.get("sum_completion_rate", 0) / metric["views"]) if metric.get("views") else 0,
+                    "cta_clicks": metric.get("cta_clicks", 0)
                 }
-            elif metric.type == "BUTTON":
-                button_clicks[metric.title] += metric.clicks or 0
+            elif metric["type"] == "BUTTON":
+                button_clicks[metric["title"]] += metric.get("clicks", 0)
 
         # Return structured metrics
         return {

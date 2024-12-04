@@ -117,6 +117,7 @@ async def save_content_metrics(session_data: SessionData):
 
     domain_name = session_data.domain_name
     interaction = session_data.interaction
+    referrer_source = session_data.referrer.utm_source if session_data.referrer else None
     bulk_updates = []
 
     # Process video metrics
@@ -135,6 +136,11 @@ async def save_content_metrics(session_data: SessionData):
                     "metrics.$.sum_completion_rate": 100 if video.ended else 0,
                 }
             }
+
+            # Add referrer field if available
+            if referrer_source:
+                update_data["$set"]["metrics.$.referrer"] = referrer_source
+
             bulk_updates.append({
                 "update_one": {
                     "filter": update_query,
@@ -142,6 +148,7 @@ async def save_content_metrics(session_data: SessionData):
                     "upsert": True
                 }
             })
+    
 
     # Process button metrics
     if interaction.button_data:
@@ -202,6 +209,11 @@ async def save_content_metrics(session_data: SessionData):
                     "metrics.$.cta_clicks": cta_clicks  
                 }
             }
+
+            # Add referrer field if available
+            if referrer_source:
+                update_data["$set"]["metrics.$.referrer"] = referrer_source
+
             bulk_updates.append({
                 "update_one": {
                     "filter": update_query,
@@ -209,6 +221,8 @@ async def save_content_metrics(session_data: SessionData):
                     "upsert": True
                 }
             })
+
+
 
 
     # Process child button metrics

@@ -43,7 +43,10 @@ class DashboardService:
         active_users_count = len(active_connections.get(domain_name, []))
 
         # Calculate bounce rate
-        bounce_rate = (bounce_count["bounce_counts"] / total_visits) * 100 if total_visits else 0  # Avoid division by zero
+        if bounce_count:
+            bounce_rate = (bounce_count["bounce_counts"] / total_visits) * 100 if total_visits else 0  # Avoid division by zero
+        else:
+            bounce_rate = 0
 
         # Return data in a structured dictionary
         return {

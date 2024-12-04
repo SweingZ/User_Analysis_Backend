@@ -72,7 +72,7 @@ async def websocket_session(
 
     try:
         while True:
-            data = await websocket.receive_text()
+            data = await websocket.receive_json()
             session_data =  SessionData(**data)
             await handle_session_data(session_data)
             print(f"Received message from {user_id} on {domain_name}: {data}")
@@ -117,7 +117,6 @@ async def save_content_metrics(session_data: SessionData):
     domain_name = session_data.domain_name
     interaction = session_data.interaction
     referrer_source = session_data.referrer.utm_source if session_data.referrer else None
-    bulk_updates = []
 
     try:
         # Process video metrics
@@ -128,25 +127,33 @@ async def save_content_metrics(session_data: SessionData):
                     "metrics.title": video.title,
                     "metrics.type": "VIDEO"
                 }
-                update_data = {
-                    "$inc": {
-                        "metrics.$.views": 1,
-                        "metrics.$.sum_watch_time": video.total_watch_time or 0,
-                        "metrics.$.sum_completion_rate": 100 if video.ended else 0,
-                    }
-                }
+                existing_doc = await mongodb.collections["content"].find_one(update_query)
 
-                # Add referrer field if available
-                if referrer_source:
-                    update_data.setdefault("$set", {})["metrics.$.referrer"] = referrer_source
-
-                bulk_updates.append({
-                    "update_one": {
-                        "filter": update_query,
-                        "update": update_data,
-                        "upsert": True
+                if existing_doc:
+                    update_data = {
+                        "$inc": {
+                            "metrics.$.views": 1,
+                            "metrics.$.sum_watch_time": video.total_watch_time or 0,
+                            "metrics.$.sum_completion_rate": 100 if video.ended else 0,
+                        }
                     }
-                })
+                    if referrer_source:
+                        update_data.setdefault("$set", {})["metrics.$.referrer"] = referrer_source
+                else:
+                    update_data = {
+                        "$push": {
+                            "metrics": {
+                                "title": video.title,
+                                "type": "VIDEO",
+                                "views": 1,
+                                "sum_watch_time": video.total_watch_time or 0,
+                                "sum_completion_rate": 100 if video.ended else 0,
+                                "referrer": referrer_source or ""
+                            }
+                        }
+                    }
+
+                await execute_update({"domain_name": domain_name}, update_data)
 
         # Process button metrics
         if interaction.button_data:
@@ -156,17 +163,24 @@ async def save_content_metrics(session_data: SessionData):
                     "metrics.title": button.content_title,
                     "metrics.type": "BUTTON"
                 }
-                update_data = {
-                    "$inc": {"metrics.$.clicks": button.click or 1}
-                }
+                existing_doc = await mongodb.collections["content"].find_one(update_query)
 
-                bulk_updates.append({
-                    "update_one": {
-                        "filter": update_query,
-                        "update": update_data,
-                        "upsert": True
+                if existing_doc:
+                    update_data = {
+                        "$inc": {"metrics.$.clicks": button.click or 1}
                     }
-                })
+                else:
+                    update_data = {
+                        "$push": {
+                            "metrics": {
+                                "title": button.content_title,
+                                "type": "BUTTON",
+                                "clicks": button.click or 1
+                            }
+                        }
+                    }
+
+                await execute_update({"domain_name": domain_name}, update_data)
 
         # Process content metrics
         if interaction.contents_data:
@@ -176,90 +190,70 @@ async def save_content_metrics(session_data: SessionData):
                     if content.start_watch_time and content.ended_watch_time
                     else 0
                 )
-
-                # Calculate the completion rate
                 completion_rate = calculate_content_completion_rate(
                     word_count=content.word_count,
                     scrolled_depth=content.scrolled_depth,
                     watch_time=watch_time
                 )
 
-                cta_clicks = 0
-                likes = 0
-                subscribers = 0
-
-                # Check for child buttons matching the parent_content_title
-                if interaction.child_buttons_data:
-                    for child_button in interaction.child_buttons_data:
-                        if child_button.parent_content_title == content.content_title:
-                            # Increment CTA clicks
-                            cta_clicks += child_button.click or 0
-
-                            # Check for LIKE and SUBSCRIBE types
-                            if child_button.contents_type == "LIKE" and (child_button.click or 0) % 2 != 0:
-                                likes += 1
-                            if child_button.contents_type == "SUBSCRIBE" and (child_button.click or 0) % 2 != 0:
-                                subscribers += 1
-
                 update_query = {
                     "domain_name": domain_name,
                     "metrics.title": content.content_title,
                     "metrics.type": "CONTENT"
                 }
-                update_data = {
-                    "$inc": {
-                        "metrics.$.views": 1,
-                        "metrics.$.sum_scroll_depth": content.scrolled_depth or 0,
-                        "metrics.$.sum_watch_time": watch_time,
-                        "metrics.$.sum_completion_rate": completion_rate,
-                        "metrics.$.cta_clicks": cta_clicks,
-                        "metrics.$.likes": likes,
-                        "metrics.$.subscribers": subscribers
+                existing_doc = await mongodb.collections["content"].find_one(update_query)
+
+                if existing_doc:
+                    update_data = {
+                        "$inc": {
+                            "metrics.$.views": 1,
+                            "metrics.$.sum_scroll_depth": content.scrolled_depth or 0,
+                            "metrics.$.sum_watch_time": watch_time,
+                            "metrics.$.sum_completion_rate": completion_rate
+                        }
                     }
-                }
-
-                # Add referrer field if available
-                if referrer_source:
-                    update_data.setdefault("$set", {})["metrics.$.referrer"] = referrer_source
-
-                bulk_updates.append({
-                    "update_one": {
-                        "filter": update_query,
-                        "update": update_data,
-                        "upsert": True
+                else:
+                    update_data = {
+                        "$push": {
+                            "metrics": {
+                                "title": content.content_title,
+                                "type": "CONTENT",
+                                "views": 1,
+                                "sum_scroll_depth": content.scrolled_depth or 0,
+                                "sum_watch_time": watch_time,
+                                "sum_completion_rate": completion_rate
+                            }
+                        }
                     }
-                })
 
-        # Process child button metrics
-        if interaction.child_buttons_data:
-            for child_button in interaction.child_buttons_data:
-                update_query = {
-                    "domain_name": domain_name,
-                    "metrics.title": child_button.content_title,
-                    "metrics.type": "BUTTON"
-                }
-                update_data = {
-                    "$inc": {"metrics.$.clicks": child_button.click or 1}
-                }
-
-                bulk_updates.append({
-                    "update_one": {
-                        "filter": update_query,
-                        "update": update_data,
-                        "upsert": True
-                    }
-                })
-
-        # Execute bulk operations if there are updates
-        if bulk_updates:
-            result = await mongodb.collections["content"].bulk_write(bulk_updates)
-            print(f"Updated content metrics for domain: {domain_name}, modified count: {result.modified_count}")
-        else:
-            print("No updates required for content metrics.")
+                await execute_update({"domain_name": domain_name}, update_data)
 
     except Exception as e:
         print(f"Error updating content metrics for domain: {domain_name}: {e}")
 
+
+async def execute_update(update_query, update_data):
+    """Execute a single update operation on the MongoDB collection."""
+    try:
+        result = await mongodb.collections["content"].update_one(
+            filter=update_query,
+            update=update_data,
+            upsert=True
+        )
+        print(f"Update successful: Matched: {result.matched_count}, Modified: {result.modified_count}")
+    except Exception as e:
+        print(f"Error executing update: {e}")
+
+    """Execute a single update operation on the MongoDB collection."""
+    try:
+        result = await mongodb.collections["content"].update_one(
+            filter=update_query,
+            update=update_data,
+            upsert=True
+        )
+        print(f"Update successful: Matched: {result.matched_count}, Modified: {result.modified_count}")
+    except Exception as e:
+        print(f"Error executing update: {e}")
 
 async def update_admin_user_list(user_id: str, domain_name: str):
     """Update the users_list of the Admin document."""

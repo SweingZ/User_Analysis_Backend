@@ -114,154 +114,151 @@ async def handle_session_data(session_data: SessionData):
 
 async def save_content_metrics(session_data: SessionData):
     """Save or update content metrics based on the session data."""
-
     domain_name = session_data.domain_name
     interaction = session_data.interaction
     referrer_source = session_data.referrer.utm_source if session_data.referrer else None
     bulk_updates = []
 
-    # Process video metrics
-    if interaction.video_data:
-        for video in interaction.video_data:
-            update_query = {
-                "domain_name": domain_name,
-                "metrics.title": video.title,
-                "metrics.type": "VIDEO"
-            }
-            update_data = {
-                "$set": {"domain_name": domain_name},
-                "$inc": {
-                    "metrics.$.views": 1,
-                    "metrics.$.sum_watch_time": video.total_watch_time or 0,
-                    "metrics.$.sum_completion_rate": 100 if video.ended else 0,
+    try:
+        # Process video metrics
+        if interaction.video_data:
+            for video in interaction.video_data:
+                update_query = {
+                    "domain_name": domain_name,
+                    "metrics.title": video.title,
+                    "metrics.type": "VIDEO"
                 }
-            }
-
-            # Add referrer field if available
-            if referrer_source:
-                update_data["$set"]["metrics.$.referrer"] = referrer_source
-
-            bulk_updates.append({
-                "update_one": {
-                    "filter": update_query,
-                    "update": update_data,
-                    "upsert": True
+                update_data = {
+                    "$inc": {
+                        "metrics.$.views": 1,
+                        "metrics.$.sum_watch_time": video.total_watch_time or 0,
+                        "metrics.$.sum_completion_rate": 100 if video.ended else 0,
+                    }
                 }
-            })
-    
 
-    # Process button metrics
-    if interaction.button_data:
-        for button in interaction.button_data:
-            update_query = {
-                "domain_name": domain_name,
-                "metrics.title": button.content_title,
-                "metrics.type": "BUTTON"
-            }
-            update_data = {
-                "$set": {"domain_name": domain_name},
-                "$inc": {"metrics.$.clicks": button.click or 1}
-            }
-            bulk_updates.append({
-                "update_one": {
-                    "filter": update_query,
-                    "update": update_data,
-                    "upsert": True
+                # Add referrer field if available
+                if referrer_source:
+                    update_data.setdefault("$set", {})["metrics.$.referrer"] = referrer_source
+
+                bulk_updates.append({
+                    "update_one": {
+                        "filter": update_query,
+                        "update": update_data,
+                        "upsert": True
+                    }
+                })
+
+        # Process button metrics
+        if interaction.button_data:
+            for button in interaction.button_data:
+                update_query = {
+                    "domain_name": domain_name,
+                    "metrics.title": button.content_title,
+                    "metrics.type": "BUTTON"
                 }
-            })
-
-    # Process content metrics
-    if interaction.contents_data:
-        for content in interaction.contents_data:
-            watch_time = (
-                (content.ended_watch_time - content.start_watch_time).total_seconds()
-                if content.start_watch_time and content.ended_watch_time
-                else 0
-            )
-
-            # Calculate the completion rate
-            completion_rate = calculate_content_completion_rate(
-                word_count=content.word_count,
-                scrolled_depth=content.scrolled_depth,
-                watch_time=watch_time
-            )
-
-            cta_clicks = 0
-            likes = 0
-            subscribers = 0
-
-            # Check for child buttons matching the parent_content_title
-            if interaction.child_buttons_data:
-                for child_button in interaction.child_buttons_data:
-                    if child_button.parent_content_title == content.content_title:
-                        # Increment CTA clicks
-                        cta_clicks += child_button.click or 0
-                        
-                        # Check for LIKE and SUBSCRIBE types
-                        if child_button.contents_type == "LIKE" and (child_button.click or 0) % 2 != 0:
-                            likes += 1
-                        if child_button.contents_type == "SUBSCRIBE" and (child_button.click or 0) % 2 != 0:
-                            subscribers += 1
-
-            update_query = {
-                "domain_name": domain_name,
-                "metrics.title": content.content_title,
-                "metrics.type": "CONTENT"
-            }
-            update_data = {
-                "$set": {"domain_name": domain_name},
-                "$inc": {
-                    "metrics.$.views": 1,
-                    "metrics.$.sum_scroll_depth": content.scrolled_depth or 0,
-                    "metrics.$.sum_watch_time": watch_time,
-                    "metrics.$.sum_completion_rate": completion_rate,
-                    "metrics.$.cta_clicks": cta_clicks,
-                    "metrics.$.likes": likes,          
-                    "metrics.$.subscribers": subscribers 
+                update_data = {
+                    "$inc": {"metrics.$.clicks": button.click or 1}
                 }
-            }
 
-            # Add referrer field if available
-            if referrer_source:
-                update_data["$set"]["metrics.$.referrer"] = referrer_source
+                bulk_updates.append({
+                    "update_one": {
+                        "filter": update_query,
+                        "update": update_data,
+                        "upsert": True
+                    }
+                })
 
-            bulk_updates.append({
-                "update_one": {
-                    "filter": update_query,
-                    "update": update_data,
-                    "upsert": True
+        # Process content metrics
+        if interaction.contents_data:
+            for content in interaction.contents_data:
+                watch_time = (
+                    (content.ended_watch_time - content.start_watch_time).total_seconds()
+                    if content.start_watch_time and content.ended_watch_time
+                    else 0
+                )
+
+                # Calculate the completion rate
+                completion_rate = calculate_content_completion_rate(
+                    word_count=content.word_count,
+                    scrolled_depth=content.scrolled_depth,
+                    watch_time=watch_time
+                )
+
+                cta_clicks = 0
+                likes = 0
+                subscribers = 0
+
+                # Check for child buttons matching the parent_content_title
+                if interaction.child_buttons_data:
+                    for child_button in interaction.child_buttons_data:
+                        if child_button.parent_content_title == content.content_title:
+                            # Increment CTA clicks
+                            cta_clicks += child_button.click or 0
+
+                            # Check for LIKE and SUBSCRIBE types
+                            if child_button.contents_type == "LIKE" and (child_button.click or 0) % 2 != 0:
+                                likes += 1
+                            if child_button.contents_type == "SUBSCRIBE" and (child_button.click or 0) % 2 != 0:
+                                subscribers += 1
+
+                update_query = {
+                    "domain_name": domain_name,
+                    "metrics.title": content.content_title,
+                    "metrics.type": "CONTENT"
                 }
-            })
-
-
-
-    # Process child button metrics
-    if interaction.child_buttons_data:
-        for child_button in interaction.child_buttons_data:
-            update_query = {
-                "domain_name": domain_name,
-                "metrics.title": child_button.content_title,
-                "metrics.type": "BUTTON"
-            }
-            update_data = {
-                "$set": {"domain_name": domain_name},
-                "$inc": {"metrics.$.clicks": child_button.click or 1}
-            }
-            bulk_updates.append({
-                "update_one": {
-                    "filter": update_query,
-                    "update": update_data,
-                    "upsert": True
+                update_data = {
+                    "$inc": {
+                        "metrics.$.views": 1,
+                        "metrics.$.sum_scroll_depth": content.scrolled_depth or 0,
+                        "metrics.$.sum_watch_time": watch_time,
+                        "metrics.$.sum_completion_rate": completion_rate,
+                        "metrics.$.cta_clicks": cta_clicks,
+                        "metrics.$.likes": likes,
+                        "metrics.$.subscribers": subscribers
+                    }
                 }
-            })
 
-    # Execute bulk operations if there are updates
-    if bulk_updates:
-        # Use Motor's bulk_write method
-        result = await mongodb.collections["content"].bulk_write(bulk_updates)
-        print(f"Updated content metrics for domain: {domain_name}, modified count: {result.modified_count}")
-    else:
-        print("No updates required for content metrics.")
+                # Add referrer field if available
+                if referrer_source:
+                    update_data.setdefault("$set", {})["metrics.$.referrer"] = referrer_source
+
+                bulk_updates.append({
+                    "update_one": {
+                        "filter": update_query,
+                        "update": update_data,
+                        "upsert": True
+                    }
+                })
+
+        # Process child button metrics
+        if interaction.child_buttons_data:
+            for child_button in interaction.child_buttons_data:
+                update_query = {
+                    "domain_name": domain_name,
+                    "metrics.title": child_button.content_title,
+                    "metrics.type": "BUTTON"
+                }
+                update_data = {
+                    "$inc": {"metrics.$.clicks": child_button.click or 1}
+                }
+
+                bulk_updates.append({
+                    "update_one": {
+                        "filter": update_query,
+                        "update": update_data,
+                        "upsert": True
+                    }
+                })
+
+        # Execute bulk operations if there are updates
+        if bulk_updates:
+            result = await mongodb.collections["content"].bulk_write(bulk_updates)
+            print(f"Updated content metrics for domain: {domain_name}, modified count: {result.modified_count}")
+        else:
+            print("No updates required for content metrics.")
+
+    except Exception as e:
+        print(f"Error updating content metrics for domain: {domain_name}: {e}")
 
 
 async def update_admin_user_list(user_id: str, domain_name: str):

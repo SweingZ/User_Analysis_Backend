@@ -187,12 +187,21 @@ async def save_content_metrics(session_data: SessionData):
             )
 
             cta_clicks = 0
+            likes = 0
+            subscribers = 0
 
             # Check for child buttons matching the parent_content_title
             if interaction.child_buttons_data:
                 for child_button in interaction.child_buttons_data:
                     if child_button.parent_content_title == content.content_title:
-                        cta_clicks += child_button.click or 0 
+                        # Increment CTA clicks
+                        cta_clicks += child_button.click or 0
+                        
+                        # Check for LIKE and SUBSCRIBE types
+                        if child_button.contents_type == "LIKE" and (child_button.click or 0) % 2 != 0:
+                            likes += 1
+                        if child_button.contents_type == "SUBSCRIBE" and (child_button.click or 0) % 2 != 0:
+                            subscribers += 1
 
             update_query = {
                 "domain_name": domain_name,
@@ -206,7 +215,9 @@ async def save_content_metrics(session_data: SessionData):
                     "metrics.$.sum_scroll_depth": content.scrolled_depth or 0,
                     "metrics.$.sum_watch_time": watch_time,
                     "metrics.$.sum_completion_rate": completion_rate,
-                    "metrics.$.cta_clicks": cta_clicks  
+                    "metrics.$.cta_clicks": cta_clicks,
+                    "metrics.$.likes": likes,          
+                    "metrics.$.subscribers": subscribers 
                 }
             }
 
@@ -221,7 +232,6 @@ async def save_content_metrics(session_data: SessionData):
                     "upsert": True
                 }
             })
-
 
 
 

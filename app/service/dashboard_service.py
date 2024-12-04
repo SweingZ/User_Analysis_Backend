@@ -6,7 +6,7 @@ from app.repo.admin_repo import AdminRepo
 from app.repo.dashboard_repo import DashboardRepo
 from datetime import datetime, timedelta
 from app.utils.shared_state import active_connections
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 class DashboardService:
     @staticmethod
@@ -69,15 +69,39 @@ class DashboardService:
         
         location_and_referrer_data = await DashboardRepo.get_location_and_referrer_data(domain_name)
         
-        locations = (item.get("location") for item in location_and_referrer_data if "location" in item)
-        referrers = (item.get("referrer") for item in location_and_referrer_data if "referrer" in item)
-
+        # Extract locations and referrers
+        locations = [item.get("location") for item in location_and_referrer_data if "location" in item]
+        referrers = [
+            (
+                referrer.get("utm_source"), 
+                referrer.get("utm_medium"), 
+                referrer.get("utm_campaign")
+            )
+            for item in location_and_referrer_data if "referrer" in item
+            for referrer in [item.get("referrer")]
+            if referrer and all(field is not None for field in (referrer.get("utm_source"), referrer.get("utm_medium"), referrer.get("utm_campaign")))
+        ]
+        
+        # Count referrers grouped by (utm_source, utm_medium, utm_campaign)
+        referrer_counts = Counter(referrers)
+        
+        # Format the results as a list of dictionaries for easier consumption
+        formatted_referrer_counts = [
+            {
+                "utm_source": key[0],
+                "utm_medium": key[1],
+                "utm_campaign": key[2],
+                "count": count
+            }
+            for key, count in referrer_counts.items()
+        ]
+        
         return {
             "os_counts": counts_data.get("os_counts", {}),
             "browser_counts": counts_data.get("browser_counts", {}),
             "device_counts": counts_data.get("device_counts", {}),
             "location_data": locations,
-            "referrers": referrers
+            "referrers": formatted_referrer_counts  # List of dictionaries with counts
         }
 
 

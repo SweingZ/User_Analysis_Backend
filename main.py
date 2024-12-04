@@ -179,6 +179,14 @@ async def save_content_metrics(session_data: SessionData):
                 watch_time=watch_time
             )
 
+            cta_clicks = 0
+
+            # Check for child buttons matching the parent_content_title
+            if interaction.child_buttons_data:
+                for child_button in interaction.child_buttons_data:
+                    if child_button.parent_content_title == content.content_title:
+                        cta_clicks += child_button.click or 0 
+
             update_query = {
                 "domain_name": domain_name,
                 "metrics.title": content.content_title,
@@ -190,7 +198,8 @@ async def save_content_metrics(session_data: SessionData):
                     "metrics.$.views": 1,
                     "metrics.$.sum_scroll_depth": content.scrolled_depth or 0,
                     "metrics.$.sum_watch_time": watch_time,
-                    "metrics.$.sum_completion_rate": completion_rate
+                    "metrics.$.sum_completion_rate": completion_rate,
+                    "metrics.$.cta_clicks": cta_clicks  
                 }
             }
             bulk_updates.append({
@@ -200,6 +209,7 @@ async def save_content_metrics(session_data: SessionData):
                     "upsert": True
                 }
             })
+
 
     # Process child button metrics
     if interaction.child_buttons_data:

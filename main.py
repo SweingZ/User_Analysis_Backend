@@ -122,6 +122,10 @@ async def save_content_metrics(session_data: SessionData):
         # Process video metrics
         if interaction.video_data:
             for video in interaction.video_data:
+                cta_clicks, likes, subscribers, child_buttons = process_child_buttons(
+                    interaction.child_buttons_data, video.title
+                )
+
                 update_query = {
                     "domain_name": domain_name,
                     "metrics": {
@@ -134,12 +138,29 @@ async def save_content_metrics(session_data: SessionData):
                 existing_doc = await mongodb.collections["content"].find_one(update_query)
 
                 if existing_doc:
+                    # Retrieve the existing child_buttons dictionary or initialize it
+                    existing_child_buttons = next(
+                        (metric.get("child_buttons", {}) for metric in existing_doc.get("metrics", [])
+                        if metric["title"] == video.title and metric["type"] == "VIDEO"),
+                        {}
+                    )
+
+                    # Merge existing and new child_buttons
+                    for button_name, clicks in child_buttons.items():
+                        child_buttons[button_name] = (
+                            existing_child_buttons.get(button_name, 0) + clicks
+                        )
+
                     update_data = {
                         "$inc": {
                             "metrics.$.views": 1,
                             "metrics.$.sum_watch_time": video.total_watch_time or 0,
                             "metrics.$.sum_completion_rate": 100 if video.ended else 0,
-                        }
+                            "metrics.$.cta_clicks": cta_clicks,
+                            "metrics.$.likes": likes,
+                            "metrics.$.subscribers": subscribers,
+                        },
+                        "$set": {"metrics.$.child_buttons": child_buttons}
                     }
                     if referrer_source:
                         update_data["$set"] = {
@@ -153,9 +174,13 @@ async def save_content_metrics(session_data: SessionData):
                                 "title": video.title,
                                 "type": "VIDEO",
                                 "views": 1,
+                                "likes": likes,
+                                "subscribers": subscribers,
+                                "cta_clicks": cta_clicks,
                                 "sum_watch_time": video.total_watch_time or 0,
                                 "sum_completion_rate": 100 if video.ended else 0,
-                                "referrer": referrer_source or ""
+                                "referrer": referrer_source or "",
+                                "child_buttons": child_buttons
                             }
                         }
                     }
@@ -214,27 +239,9 @@ async def save_content_metrics(session_data: SessionData):
                     watch_time=watch_time
                 )
 
-                cta_clicks = 0
-                likes = 0
-                subscribers = 0
-                child_buttons = {}
-
-                if interaction.child_buttons_data:
-                    for child_button in interaction.child_buttons_data:
-                        if child_button.parent_content_title == content.content_title:
-                            # Increment CTA clicks
-                            cta_clicks += child_button.click or 0
-                            
-                            # Check for LIKE and SUBSCRIBE types
-                            if child_button.content_title == "LIKE" and (child_button.click or 0) % 2 != 0:
-                                likes += 1
-                            elif child_button.content_title == "SUBSCRIBE" and (child_button.click or 0) % 2 != 0:
-                                subscribers += 1
-                            else:
-                                # Add to child_buttons dictionary for unmatched content types
-                                child_buttons[child_button.content_title] = (
-                                    child_buttons.get(child_button.content_title, 0) + (child_button.click or 0)
-                                )
+                cta_clicks, likes, subscribers, child_buttons = process_child_buttons(
+                    interaction.child_buttons_data, content.content_title
+                )
 
                 update_query = {
                     "domain_name": domain_name,
@@ -306,6 +313,31 @@ async def save_content_metrics(session_data: SessionData):
     except Exception as e:
         print(f"Error updating content metrics for domain: {domain_name}: {e}")
 
+
+def process_child_buttons(child_buttons_data, parent_content_title):
+    """Process child buttons data for a given parent content."""
+    cta_clicks = 0
+    likes = 0
+    subscribers = 0
+    child_buttons = {}
+
+    if child_buttons_data:
+        for child_button in child_buttons_data:
+            if child_button.parent_content_title == parent_content_title:
+                # Increment CTA clicks
+                cta_clicks += child_button.click or 0
+                
+                # Check for LIKE and SUBSCRIBE types
+                if child_button.content_title == "LIKE" and (child_button.click or 0) % 2 != 0:
+                    likes += 1
+                elif child_button.content_title == "SUBSCRIBE" and (child_button.click or 0) % 2 != 0:
+                    subscribers += 1
+                else:
+                    # Add to child_buttons dictionary for unmatched content types
+                    child_buttons[child_button.content_title] = (
+                        child_buttons.get(child_button.content_title, 0) + (child_button.click or 0)
+                    )
+    return cta_clicks, likes, subscribers, child_buttons
 
 async def update_admin_user_list(user_id: str, domain_name: str):
     """Update the users_list of the Admin document."""

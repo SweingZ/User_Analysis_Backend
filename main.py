@@ -217,6 +217,7 @@ async def save_content_metrics(session_data: SessionData):
                 cta_clicks = 0
                 likes = 0
                 subscribers = 0
+                child_buttons = {}
 
                 if interaction.child_buttons_data:
                     for child_button in interaction.child_buttons_data:
@@ -225,10 +226,15 @@ async def save_content_metrics(session_data: SessionData):
                             cta_clicks += child_button.click or 0
                             
                             # Check for LIKE and SUBSCRIBE types
-                            if child_button.contents_type == "LIKE" and (child_button.click or 0) % 2 != 0:
+                            if child_button.content_title == "LIKE" and (child_button.click or 0) % 2 != 0:
                                 likes += 1
-                            if child_button.contents_type == "SUBSCRIBE" and (child_button.click or 0) % 2 != 0:
+                            elif child_button.content_title == "SUBSCRIBE" and (child_button.click or 0) % 2 != 0:
                                 subscribers += 1
+                            else:
+                                # Add to child_buttons dictionary for unmatched content types
+                                child_buttons[child_button.content_title] = (
+                                    child_buttons.get(child_button.content_title, 0) + (child_button.click or 0)
+                                )
 
                 update_query = {
                     "domain_name": domain_name,
@@ -242,6 +248,19 @@ async def save_content_metrics(session_data: SessionData):
                 existing_doc = await mongodb.collections["content"].find_one(update_query)
 
                 if existing_doc:
+                    # Retrieve the existing child_buttons dictionary or initialize it
+                    existing_child_buttons = next(
+                        (metric.get("child_buttons", {}) for metric in existing_doc.get("metrics", [])
+                        if metric["title"] == content.content_title and metric["type"] == "CONTENT"),
+                        {}
+                    )
+
+                    # Merge existing and new child_buttons
+                    for button_name, clicks in child_buttons.items():
+                        child_buttons[button_name] = (
+                            existing_child_buttons.get(button_name, 0) + clicks
+                        )
+
                     update_data = {
                         "$inc": {
                             "metrics.$.views": 1,
@@ -249,16 +268,17 @@ async def save_content_metrics(session_data: SessionData):
                             "metrics.$.sum_watch_time": watch_time,
                             "metrics.$.sum_completion_rate": completion_rate,
                             "metrics.$.cta_clicks": cta_clicks,
-                            "metrics.$.likes": likes,          
+                            "metrics.$.likes": likes,
                             "metrics.$.subscribers": subscribers,
-                        }
+                        },
+                        "$set": {"metrics.$.child_buttons": child_buttons}
                     }
                     if referrer_source:
-                        update_data["$set"] = {
-                            "metrics.$.referrer": referrer_source
-                        }
+                        update_data["$set"]["metrics.$.referrer"] = referrer_source
+
                     await mongodb.collections["content"].update_one(update_query, update_data)
                 else:
+                    # Create a new document with all the necessary fields
                     update_data = {
                         "$push": {
                             "metrics": {
@@ -269,9 +289,10 @@ async def save_content_metrics(session_data: SessionData):
                                 "sum_watch_time": watch_time,
                                 "sum_completion_rate": completion_rate,
                                 "cta_clicks": cta_clicks,
-                                "likes": likes,          
+                                "likes": likes,
                                 "subscribers": subscribers,
-                                "referrer": referrer_source or ""
+                                "referrer": referrer_source or "",
+                                "child_buttons": child_buttons
                             }
                         }
                     }
@@ -281,32 +302,10 @@ async def save_content_metrics(session_data: SessionData):
                         upsert=True
                     )
 
+
     except Exception as e:
         print(f"Error updating content metrics for domain: {domain_name}: {e}")
 
-
-async def execute_update(update_query, update_data):
-    """Execute a single update operation on the MongoDB collection."""
-    try:
-        result = await mongodb.collections["content"].update_one(
-            filter=update_query,
-            update=update_data,
-            upsert=True
-        )
-        print(f"Update successful: Matched: {result.matched_count}, Modified: {result.modified_count}")
-    except Exception as e:
-        print(f"Error executing update: {e}")
-
-    """Execute a single update operation on the MongoDB collection."""
-    try:
-        result = await mongodb.collections["content"].update_one(
-            filter=update_query,
-            update=update_data,
-            upsert=True
-        )
-        print(f"Update successful: Matched: {result.matched_count}, Modified: {result.modified_count}")
-    except Exception as e:
-        print(f"Error executing update: {e}")
 
 async def update_admin_user_list(user_id: str, domain_name: str):
     """Update the users_list of the Admin document."""

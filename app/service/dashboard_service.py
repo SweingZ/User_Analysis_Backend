@@ -141,7 +141,8 @@ class DashboardService:
                     "likes": metric.get("likes", 0),
                     "avg_scroll_depth": (metric.get("sum_scroll_depth", 0) / metric["views"]) if metric.get("views") else 0,
                     "avg_completion_rate": (metric.get("sum_completion_rate", 0) / metric["views"]) if metric.get("views") else 0,
-                    "cta_clicks": metric.get("cta_clicks", 0)
+                    "cta_clicks": metric.get("cta_clicks", 0),
+                    "subscribers": metric.get("subscribers", 0)
                 }
             elif metric["type"] == "BUTTON":
                 button_clicks[metric["title"]] += metric.get("clicks", 0)

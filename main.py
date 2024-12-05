@@ -124,8 +124,12 @@ async def save_content_metrics(session_data: SessionData):
             for video in interaction.video_data:
                 update_query = {
                     "domain_name": domain_name,
-                    "metrics.title": video.title,
-                    "metrics.type": "VIDEO"
+                    "metrics": {
+                        "$elemMatch": {
+                            "title": video.title,
+                            "type": "VIDEO"
+                        }
+                    }
                 }
                 existing_doc = await mongodb.collections["content"].find_one(update_query)
 
@@ -138,7 +142,10 @@ async def save_content_metrics(session_data: SessionData):
                         }
                     }
                     if referrer_source:
-                        update_data.setdefault("$set", {})["metrics.$.referrer"] = referrer_source
+                        update_data["$set"] = {
+                            "metrics.$.referrer": referrer_source
+                        }
+                    await mongodb.collections["content"].update_one(update_query, update_data)
                 else:
                     update_data = {
                         "$push": {
@@ -152,16 +159,23 @@ async def save_content_metrics(session_data: SessionData):
                             }
                         }
                     }
-
-                await execute_update({"domain_name": domain_name}, update_data)
+                    await mongodb.collections["content"].update_one(
+                        {"domain_name": domain_name},
+                        update_data,
+                        upsert=True
+                    )
 
         # Process button metrics
         if interaction.button_data:
             for button in interaction.button_data:
                 update_query = {
                     "domain_name": domain_name,
-                    "metrics.title": button.content_title,
-                    "metrics.type": "BUTTON"
+                    "metrics": {
+                        "$elemMatch": {
+                            "title": button.content_title,
+                            "type": "BUTTON"
+                        }
+                    }
                 }
                 existing_doc = await mongodb.collections["content"].find_one(update_query)
 
@@ -169,6 +183,7 @@ async def save_content_metrics(session_data: SessionData):
                     update_data = {
                         "$inc": {"metrics.$.clicks": button.click or 1}
                     }
+                    await mongodb.collections["content"].update_one(update_query, update_data)
                 else:
                     update_data = {
                         "$push": {
@@ -179,8 +194,11 @@ async def save_content_metrics(session_data: SessionData):
                             }
                         }
                     }
-
-                await execute_update({"domain_name": domain_name}, update_data)
+                    await mongodb.collections["content"].update_one(
+                        {"domain_name": domain_name},
+                        update_data,
+                        upsert=True
+                    )
 
         # Process content metrics
         if interaction.contents_data:
@@ -196,10 +214,30 @@ async def save_content_metrics(session_data: SessionData):
                     watch_time=watch_time
                 )
 
+                cta_clicks = 0
+                likes = 0
+                subscribers = 0
+
+                if interaction.child_buttons_data:
+                    for child_button in interaction.child_buttons_data:
+                        if child_button.parent_content_title == content.content_title:
+                            # Increment CTA clicks
+                            cta_clicks += child_button.click or 0
+                            
+                            # Check for LIKE and SUBSCRIBE types
+                            if child_button.contents_type == "LIKE" and (child_button.click or 0) % 2 != 0:
+                                likes += 1
+                            if child_button.contents_type == "SUBSCRIBE" and (child_button.click or 0) % 2 != 0:
+                                subscribers += 1
+
                 update_query = {
                     "domain_name": domain_name,
-                    "metrics.title": content.content_title,
-                    "metrics.type": "CONTENT"
+                    "metrics": {
+                        "$elemMatch": {
+                            "title": content.content_title,
+                            "type": "CONTENT"
+                        }
+                    }
                 }
                 existing_doc = await mongodb.collections["content"].find_one(update_query)
 
@@ -209,9 +247,17 @@ async def save_content_metrics(session_data: SessionData):
                             "metrics.$.views": 1,
                             "metrics.$.sum_scroll_depth": content.scrolled_depth or 0,
                             "metrics.$.sum_watch_time": watch_time,
-                            "metrics.$.sum_completion_rate": completion_rate
+                            "metrics.$.sum_completion_rate": completion_rate,
+                            "metrics.$.cta_clicks": cta_clicks,
+                            "metrics.$.likes": likes,          
+                            "metrics.$.subscribers": subscribers,
                         }
                     }
+                    if referrer_source:
+                        update_data["$set"] = {
+                            "metrics.$.referrer": referrer_source
+                        }
+                    await mongodb.collections["content"].update_one(update_query, update_data)
                 else:
                     update_data = {
                         "$push": {
@@ -221,12 +267,19 @@ async def save_content_metrics(session_data: SessionData):
                                 "views": 1,
                                 "sum_scroll_depth": content.scrolled_depth or 0,
                                 "sum_watch_time": watch_time,
-                                "sum_completion_rate": completion_rate
+                                "sum_completion_rate": completion_rate,
+                                "cta_clicks": cta_clicks,
+                                "likes": likes,          
+                                "subscribers": subscribers,
+                                "referrer": referrer_source or ""
                             }
                         }
                     }
-
-                await execute_update({"domain_name": domain_name}, update_data)
+                    await mongodb.collections["content"].update_one(
+                        {"domain_name": domain_name},
+                        update_data,
+                        upsert=True
+                    )
 
     except Exception as e:
         print(f"Error updating content metrics for domain: {domain_name}: {e}")

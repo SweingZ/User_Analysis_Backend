@@ -137,7 +137,8 @@ class DashboardService:
                     "child_buttons": metric.get("child_buttons",{}),
                     "avg_watch_time": (metric.get("sum_watch_time", 0) / metric["views"]) if metric.get("views") else 0,
                     "avg_completion_rate": (metric.get("sum_completion_rate", 0) / metric["views"]) if metric.get("views") else 0,
-                    "subscription_rate": (metric.get("subscribers", 0) / metric["views"]) if metric.get("views") else 0
+                    "subscription_rate": (metric.get("subscribers", 0) / metric["views"]) if metric.get("views") else 0,
+                    "like_rate": (metric.get("likes", 0) / metric["views"]) if metric.get("views") else 0
                 }
             elif metric["type"] == "CONTENT":
                 content_metrics[metric["title"]] = {
@@ -149,7 +150,8 @@ class DashboardService:
                     "avg_scroll_depth": (metric.get("sum_scroll_depth", 0) / metric["views"]) if metric.get("views") else 0,
                     "avg_watch_time": (metric.get("sum_watch_time", 0) / metric["views"]) if metric.get("views") else 0,
                     "avg_completion_rate": (metric.get("sum_completion_rate", 0) / metric["views"]) if metric.get("views") else 0,
-                    "subscription_rate": (metric.get("subscribers", 0) / metric["views"]) if metric.get("views") else 0
+                    "subscription_rate": (metric.get("subscribers", 0) / metric["views"]) if metric.get("views") else 0,
+                    "like_rate": (metric.get("likes", 0) / metric["views"]) if metric.get("views") else 0
                 }
             elif metric["type"] == "BUTTON":
                 button_clicks[metric["title"]] += metric.get("clicks", 0)

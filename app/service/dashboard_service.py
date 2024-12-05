@@ -140,9 +140,11 @@ class DashboardService:
                     "views": metric.get("views", 0),
                     "likes": metric.get("likes", 0),
                     "avg_scroll_depth": (metric.get("sum_scroll_depth", 0) / metric["views"]) if metric.get("views") else 0,
+                    "avg_watch_time": (metric.get("sum_watch_time", 0) / metric["views"]) if metric.get("views") else 0,
                     "avg_completion_rate": (metric.get("sum_completion_rate", 0) / metric["views"]) if metric.get("views") else 0,
                     "cta_clicks": metric.get("cta_clicks", 0),
-                    "subscribers": metric.get("subscribers", 0)
+                    "subscribers": metric.get("subscribers", 0),
+                    "child_buttons": metric.get("child_buttons",{})
                 }
             elif metric["type"] == "BUTTON":
                 button_clicks[metric["title"]] += metric.get("clicks", 0)

@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import HTTPException, status
 from app.dto.user_dto import UserResponseDTO
 from app.model.user_model import User
@@ -21,3 +22,10 @@ class UserService:
         if result:
             return [UserResponseDTO(**doc) for doc in result]
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail="Error Occured")
+    
+    @staticmethod
+    async def get_user_session(user_id: str, year: Optional[int], month: Optional[int]):
+        session = await UserRepo.find_session_by_user_id(user_id, year, month)
+        if not session:
+            return {"error": "Session not found for the given user_id"}
+        return session

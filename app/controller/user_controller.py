@@ -1,4 +1,5 @@
-from fastapi import APIRouter
+from typing import Optional
+from fastapi import APIRouter, HTTPException, Query
 from app.model.user_model import User
 from app.service.user_service import UserService
 from app.config.db_config import mongodb
@@ -20,3 +21,14 @@ async def get_id():
 async def get_top_users(admin_id: str):
     users = await UserService.get_top_users(admin_id)
     return users
+
+@user_route.get("/sessions/{user_id}")
+async def get_user_session(
+    user_id: str,
+    year: Optional[int] = Query(None),
+    month: Optional[int] = Query(None)
+):
+    session = await UserService.get_user_session(user_id, year, month)
+    if "error" in session:
+        raise HTTPException(status_code=404, detail=session["error"])
+    return session

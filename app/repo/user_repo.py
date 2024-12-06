@@ -10,8 +10,13 @@ class UserRepo:
         return result
     
     @staticmethod
-    async def find_users():
+    async def find_users(domain_name: str):
         pipeline = [
+            {
+                "$match": {
+                    "domain_name": domain_name  # Filter by the given domain_name
+                }
+            },
             {
                 "$project": {
                     "user_id": 1,
@@ -26,7 +31,7 @@ class UserRepo:
             },
             {
                 "$sort": {
-                    "session_count": DESCENDING  # Sort in descending order of session_count
+                    "session_count": -1  # Sort in descending order of session_count
                 }
             },
             {

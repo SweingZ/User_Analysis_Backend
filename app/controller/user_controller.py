@@ -16,7 +16,7 @@ async def get_id():
     user = await mongodb.collections["user"].insert_one({"session_ids": []})  # Await the insert operation
     return {"user_id": str(user.inserted_id)}  # Convert ObjectId to string
 
-@user_route.get("/get_top_users")
-async def get_top_users():
-    users = await UserService.get_top_users()
+@user_route.get("/get_top_users/{admin_id}")
+async def get_top_users(admin_id: str):
+    users = await UserService.get_top_users(admin_id)
     return users

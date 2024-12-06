@@ -28,7 +28,5 @@ async def get_user_session(
     year: Optional[int] = Query(None),
     month: Optional[int] = Query(None)
 ):
-    session = await UserService.get_user_session(user_id, year, month)
-    if "error" in session:
-        raise HTTPException(status_code=404, detail=session["error"])
+    session = await UserService.get_user_session(user_id, year, month)        
     return session

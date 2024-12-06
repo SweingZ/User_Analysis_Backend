@@ -25,6 +25,10 @@ class DashboardRepo:
         return await mongodb.collections["counts"].find_one({"domain_name": domain_name}, {"bounce_counts": 1, "_id": 0})
     
     @staticmethod
+    async def get_bounce_counts_per_page(domain_name: str):
+        return await mongodb.collections["counts"].find_one({"domain_name": domain_name}, {"bounce_counts_per_page": 1, "_id": 0})
+    
+    @staticmethod
     async def get_count_data(domain_name: str):
         return await mongodb.collections["counts"].find_one({"domain_name":domain_name})
     

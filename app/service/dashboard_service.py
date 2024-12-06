@@ -28,7 +28,7 @@ class DashboardService:
         domain_name = await DashboardService.get_domain_name(admin_id)
 
         # Use asyncio.gather to fetch data concurrently
-        total_visitors, total_visits, average_session_time, page_view_analysis, bounce_count, total_visits_change_rate, avg_session_time_change_rate, user_joined_change_rate = await asyncio.gather(
+        total_visitors, total_visits, average_session_time, page_view_analysis, bounce_count, total_visits_change_rate, avg_session_time_change_rate, user_joined_change_rate, bounce_counts_per_page = await asyncio.gather(
             DashboardRepo.get_total_visitors(domain_name),
             DashboardRepo.get_total_visits(domain_name),
             DashboardService.get_avg_session_time(domain_name),
@@ -36,7 +36,8 @@ class DashboardService:
             DashboardRepo.get_bounce_count(domain_name),
             DashboardService.get_total_visits_change_rate(domain_name),
             DashboardService.get_avg_session_time_change_rate(domain_name),
-            DashboardService.get_user_joined_change_rate(domain_name)
+            DashboardService.get_user_joined_change_rate(domain_name),
+            DashboardRepo.get_bounce_counts_per_page(domain_name)
         )
 
         # Fetch active users for the domain
@@ -55,6 +56,7 @@ class DashboardService:
             "avg_session_time": average_session_time,
             "page_view_analysis": page_view_analysis["page_counts"],
             "bounce_rate": bounce_rate,
+            "bounce_counts_per_page": bounce_counts_per_page["bounce_counts_per_page"],
             "total_visits_change_rate": total_visits_change_rate,
             "avg_session_time_change_rate": avg_session_time_change_rate,
             "total_visitors_change_rate": user_joined_change_rate,

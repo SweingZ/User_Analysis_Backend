@@ -18,7 +18,7 @@ class Content(BaseModel):
     metrics: List[Metric]
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "domain_name": "example.com",
                 "metrics": [

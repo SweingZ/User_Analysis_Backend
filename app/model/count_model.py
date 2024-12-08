@@ -11,7 +11,7 @@ class CountModel(BaseModel):
     bounce_counts_per_page: Dict[str, int]
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "domain_name": "example.com",
                 "page_counts": {

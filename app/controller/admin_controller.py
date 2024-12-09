@@ -16,10 +16,11 @@ async def login_admin(loginRequestDTO: LoginRequestDTO):
     result = await AdminService.login_admin(loginRequestDTO)
     return result
 
-@admin_route.put("/admin/verify", Depends(super_admin_verification))
+@admin_route.put("/admin/verify")
 async def verify_admin(
     admin_id: str, 
-    account_status: str = Query(..., regex="^(ACCEPTED|REJECTED)$")  
+    account_status: str = Query(..., regex="^(ACCEPTED|REJECTED)$"),
+    payload=  Depends(super_admin_verification)
 ):
     """
     Endpoint to verify an admin account by updating its status.

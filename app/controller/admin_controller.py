@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException, Query,status
+from fastapi import APIRouter, Depends, HTTPException, Query,status
 from app.dto.login_dto import LoginRequestDTO
 from app.model.admin_model import Admin
 from app.service.admin_service import AdminService
+from app.utils.jwt_utils import super_admin_verification
 
 admin_route = APIRouter()
 
@@ -15,7 +16,7 @@ async def login_admin(loginRequestDTO: LoginRequestDTO):
     result = await AdminService.login_admin(loginRequestDTO)
     return result
 
-@admin_route.put("/admin/verify")
+@admin_route.put("/admin/verify", Depends(super_admin_verification))
 async def verify_admin(
     admin_id: str, 
     account_status: str = Query(..., regex="^(ACCEPTED|REJECTED)$")  

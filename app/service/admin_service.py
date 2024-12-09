@@ -29,6 +29,7 @@ class AdminService:
         except Exception as e:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error Occurred: {str(e)}")
     
+
     @staticmethod
     async def login_admin(loginRequestDTO: LoginRequestDTO):
         if not loginRequestDTO.username or not loginRequestDTO.password:
@@ -37,6 +38,12 @@ class AdminService:
         result = await AdminRepo.find_admin(loginRequestDTO.username)
         if not result:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No Admin Found with that username.")
+        
+        if result.get("status", "PENDING") != "ACCEPTED":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, 
+                detail="Your account has not been accepted by the superadmin. Please contact support."
+            )
         
         # Verify the hashed password
         if not verify_password(loginRequestDTO.password, result["password"]):
@@ -48,7 +55,6 @@ class AdminService:
             "role": result["role"],
         }
 
-        # Add domain_name only if it exists
         domain_name: Optional[str] = result.get("domain_name")
         if domain_name:
             payload["domain_name"] = domain_name
@@ -56,4 +62,24 @@ class AdminService:
         access_token = create_access_token(payload)
         
         return {"access_token": access_token}
+    
+    @staticmethod
+    async def verify_admin(admin_id: str, new_status: str):
+        admin = await AdminRepo.find_admin_by_id(admin_id)
+        if not admin:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Admin with ID {admin_id} not found."
+            )
+
+        # Update the admin's status
+        update_result = await AdminRepo.update_admin_status(admin_id, new_status)
+        if not update_result:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Failed to update admin status."
+            )
+
+        return {"admin_id": admin_id, "status": new_status}
+
 

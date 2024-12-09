@@ -18,3 +18,12 @@ class AdminRepo:
     async def find_admin_by_id(admin_id: str):
         result = await mongodb.collections["admin"].find_one({"_id":ObjectId(admin_id)})
         return result
+    
+    @staticmethod
+    async def update_admin_status(admin_id: str, new_status: str):
+        """Update the admin's status."""
+        result = await mongodb.collections["admin"].update_one(
+            {"_id": ObjectId(admin_id)},
+            {"$set": {"status": new_status}}
+        )
+        return result.modified_count > 0

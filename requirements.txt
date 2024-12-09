@@ -2,3 +2,5 @@ fastapi
 uvicorn 
 motor
 passlib[bcrypt]
+python-dotenv
+pyjwt

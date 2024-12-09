@@ -6,3 +6,4 @@ class Admin(BaseModel):
     password: Optional[str] = None
     domain_name: Optional[str] = None
     users_list: Optional[List[str]] = []
+    status: Optional[str] = "PENDING"

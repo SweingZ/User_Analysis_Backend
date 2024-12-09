@@ -2,6 +2,7 @@ from fastapi import HTTPException, status
 from app.dto.login_dto import LoginRequestDTO
 from app.model.admin_model import Admin
 from app.repo.admin_repo import AdminRepo
+from app.utils.jwt_utils import create_access_token
 from app.utils.password_utils import hash_password, verify_password
 
 class AdminService:
@@ -40,4 +41,11 @@ class AdminService:
         if not verify_password(loginRequestDTO.password, result["password"]):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect password.")
         
-        return {"admin_id": str(result["_id"])}
+        payload = {
+            "admin_id": str(result["_id"]),
+            "domain_name" : result["domain_name"]
+        }
+
+        access_token = create_access_token(payload)
+        
+        return {"access_token":access_token}

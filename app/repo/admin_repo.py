@@ -6,7 +6,7 @@ class AdminRepo:
 
     @staticmethod
     async def insert_user(admin: Admin):
-        result = await mongodb.collections["admin"].insert_one(admin.dict())
+        result = await mongodb.collections["admin"].insert_one(admin.dict(exclude_unset=True))
         return result
     
     @staticmethod

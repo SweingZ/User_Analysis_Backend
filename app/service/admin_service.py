@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import HTTPException, status
 from app.dto.login_dto import LoginRequestDTO
 from app.model.admin_model import Admin
@@ -41,11 +42,18 @@ class AdminService:
         if not verify_password(loginRequestDTO.password, result["password"]):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect password.")
         
+        # Dynamically construct payload
         payload = {
             "admin_id": str(result["_id"]),
-            "domain_name" : result["domain_name"]
+            "role": result["role"],
         }
+
+        # Add domain_name only if it exists
+        domain_name: Optional[str] = result.get("domain_name")
+        if domain_name:
+            payload["domain_name"] = domain_name
 
         access_token = create_access_token(payload)
         
-        return {"access_token":access_token}
+        return {"access_token": access_token}
+

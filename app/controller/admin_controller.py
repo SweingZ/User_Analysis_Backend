@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from app.dto.login_dto import LoginRequestDTO
 from app.model.admin_model import Admin
 from app.service.admin_service import AdminService
 
@@ -11,6 +12,6 @@ async def register_admin(admin: Admin):
     return result
 
 @admin_route.post("/admin/login")
-async def login_admin(admin: Admin):
-    result = await AdminService.login_admin(admin)
+async def login_admin(loginRequestDTO: LoginRequestDTO):
+    result = await AdminService.login_admin(loginRequestDTO)
     return result

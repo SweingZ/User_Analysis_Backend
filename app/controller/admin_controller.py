@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Query,status
 from app.dto.login_dto import LoginRequestDTO
 from app.model.admin_model import Admin
@@ -35,3 +36,8 @@ async def verify_admin(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred."
         )
+
+@admin_route.put("/admin/feature_access/{admin_id}")
+async def assign_feature_access(admin_id: str, feature_list: List[str]):
+    result = await AdminService.assign_feature_access(admin_id, feature_list)
+    return result

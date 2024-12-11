@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 from fastapi import HTTPException, status
 from app.dto.login_dto import LoginRequestDTO
 from app.model.admin_model import Admin
@@ -6,7 +6,10 @@ from app.repo.admin_repo import AdminRepo
 from app.utils.jwt_utils import create_access_token
 from app.utils.password_utils import hash_password, verify_password
 
+
 class AdminService:
+
+    VALID_FEATURE_LIST = ["MAIN","DEVICE_STATS","CONTENT","USER_STATS"]
 
     @staticmethod
     async def register_admin(admin: Admin):
@@ -81,5 +84,23 @@ class AdminService:
             )
 
         return {"admin_id": admin_id, "status": new_status}
+    
+    @staticmethod
+    async def assign_feature_access(admin_id: str, feature_list: List[str]):
+        # Check if all features in feature_list are valid
+        invalid_features = [feature for feature in feature_list if feature not in AdminService.VALID_FEATURE_LIST]
+        
+        if invalid_features:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid features: {', '.join(invalid_features)}. Allowed features: {', '.join(AdminService.VALID_FEATURE_LIST)}"
+            )
+        
+        update_dict = {
+            "feature_list": feature_list
+        }
+
+        result = await AdminRepo.update_admin(admin_id, update_dict)
+        return {"message": "Feature access assigned successfully."}
 
 

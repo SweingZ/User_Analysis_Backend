@@ -27,3 +27,10 @@ class AdminRepo:
             {"$set": {"status": new_status}}
         )
         return result.modified_count > 0
+    
+    @staticmethod
+    async def update_admin(admin_id: str, update_dict: dict):
+        result = await mongodb.collections["admin"].update_one(
+            {"_id": ObjectId(admin_id)},
+            {"$set": update_dict}
+        )

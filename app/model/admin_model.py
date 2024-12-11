@@ -8,3 +8,4 @@ class Admin(BaseModel):
     users_list: Optional[List[str]] = []
     status: Optional[str] = Field(default="PENDING")
     role: Optional[str] = Field(default="ADMIN")
+    feature_list: Optional[List[str]] = []

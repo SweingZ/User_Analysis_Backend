@@ -42,7 +42,7 @@ def verify_access_token(token: str):
 async def admin_verification(token: str = Depends(oauth2_scheme)):
     payload = verify_access_token(token)
     if not is_admin(payload):
-        raise HTTPException(status_code=403, detail="Not authorized to perform this action")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to perform this action")
     return payload
 
 def is_admin(payload: dict) -> bool:
@@ -52,11 +52,24 @@ def is_admin(payload: dict) -> bool:
 async def super_admin_verification(token: str = Depends(oauth2_scheme)):
     payload = verify_access_token(token)
     if not is_super_admin(payload):
-        raise HTTPException(status_code=403, detail="Not authorized to perform this action")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to perform this action")
     return payload
 
 def is_super_admin(payload: dict) -> bool:
     role = payload.get("role")
     return role == "SUPERADMIN"
+
+async def feature_access_verification(page_name: str, token: str = Depends(oauth2_scheme)):
+    payload = verify_access_token(token)
+    
+    if not is_admin(payload) and not is_super_admin(payload):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to perform this action")
+    
+    if is_admin(payload):
+        if page_name not in payload.get("feature_list", []):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"Admin does not have access to the feature: {page_name}")
+    
+    return payload
+
 
 

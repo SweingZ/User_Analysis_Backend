@@ -1,8 +1,9 @@
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from app.model.user_model import User
 from app.service.user_service import UserService
 from app.config.db_config import mongodb
+from app.utils.jwt_utils import feature_access_verification
 
 
 user_route = APIRouter()
@@ -18,7 +19,7 @@ async def get_id():
     return {"user_id": str(user.inserted_id)}  # Convert ObjectId to string
 
 @user_route.get("/get_top_users/{admin_id}")
-async def get_top_users(admin_id: str):
+async def get_top_users(admin_id: str, payload: str = Depends(feature_access_verification)):
     users = await UserService.get_top_users(admin_id)
     return users
 

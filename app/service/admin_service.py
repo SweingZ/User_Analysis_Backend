@@ -42,7 +42,7 @@ class AdminService:
         if not result:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No Admin Found with that username.")
         
-        if result.get("status", "PENDING") != "ACCEPTED":
+        if result.get("role","ADMIN") == "ADMIN" and result.get("status", "PENDING") != "ACCEPTED":
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, 
                 detail="Your account has not been accepted by the superadmin. Please contact support."
@@ -61,6 +61,10 @@ class AdminService:
         domain_name: Optional[str] = result.get("domain_name")
         if domain_name:
             payload["domain_name"] = domain_name
+
+        feature_list: Optional[List[str]] = result.get("feature_list")
+        if feature_list:
+            payload["feature_list"] = feature_list
 
         access_token = create_access_token(payload)
         
@@ -87,20 +91,45 @@ class AdminService:
     
     @staticmethod
     async def assign_feature_access(admin_id: str, feature_list: List[str]):
-        # Check if all features in feature_list are valid
-        invalid_features = [feature for feature in feature_list if feature not in AdminService.VALID_FEATURE_LIST]
-        
-        if invalid_features:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid features: {', '.join(invalid_features)}. Allowed features: {', '.join(AdminService.VALID_FEATURE_LIST)}"
-            )
-        
-        update_dict = {
-            "feature_list": feature_list
-        }
+        """
+        Assign feature access to an admin by updating the feature list.
+        """
+        try:
+            # Check if all features in feature_list are valid
+            invalid_features = [feature for feature in feature_list if feature not in AdminService.VALID_FEATURE_LIST]
+            if invalid_features:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Invalid features: {', '.join(invalid_features)}. "
+                        f"Allowed features: {', '.join(AdminService.VALID_FEATURE_LIST)}"
+                )
 
-        result = await AdminRepo.update_admin(admin_id, update_dict)
-        return {"message": "Feature access assigned successfully."}
+            admin = await AdminRepo.find_admin_by_id(admin_id)
+            if not admin:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Admin with ID {admin_id} not found."
+                )
+
+            # Update the admin's feature list
+            update_dict = {"feature_list": feature_list}
+            update_result = await AdminRepo.update_admin(admin_id, update_dict)
+            if not update_result:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to update feature access for the admin. Please try again later."
+                )
+
+            return {"message": "Feature access assigned successfully.", "admin_id": admin_id, "features": feature_list}
+
+        except HTTPException as e:
+            # Re-raise HTTP exceptions for consistent handling
+            raise e
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"An unexpected error occurred: {str(e)}"
+            )
+
 
 

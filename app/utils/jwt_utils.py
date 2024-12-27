@@ -59,7 +59,7 @@ def is_super_admin(payload: dict) -> bool:
     role = payload.get("role")
     return role == "SUPERADMIN"
 
-async def feature_access_verification(page_name: str, token: str = Depends(oauth2_scheme)):
+async def feature_access_verification(page_name: str, token: str ):
     payload = verify_access_token(token)
     
     if not is_admin(payload) and not is_super_admin(payload):

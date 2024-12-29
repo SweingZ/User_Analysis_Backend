@@ -1,5 +1,6 @@
 from typing import List, Optional
 from fastapi import HTTPException, status
+from app.dto.admin_dto import AdminResponseDTO
 from app.dto.login_dto import LoginRequestDTO
 from app.model.admin_model import Admin
 from app.repo.admin_repo import AdminRepo
@@ -130,6 +131,24 @@ class AdminService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"An unexpected error occurred: {str(e)}"
             )
+        
+    @staticmethod
+    async def get_all_admins():
+        """
+        Get all admin data
+        """
+        try:
+            result = await AdminRepo.get_all_admins()
+            if result:
+                print(result)
+                return [AdminResponseDTO(**admin) for admin in result]
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail="Error Fetching Admin Data")
+        except Exception as e:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=f"An unexpected error occured: {str(e)}")
+
+            
+
+
 
 
 

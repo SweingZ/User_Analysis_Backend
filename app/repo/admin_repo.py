@@ -34,3 +34,8 @@ class AdminRepo:
             {"_id": ObjectId(admin_id)},
             {"$set": update_dict}
         )
+
+    @staticmethod
+    async def get_all_admins():
+        result = await mongodb.collections["admin"].find({"role":"ADMIN"}).to_list(length=None)
+        return result

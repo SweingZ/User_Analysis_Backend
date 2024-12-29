@@ -17,6 +17,11 @@ async def login_admin(loginRequestDTO: LoginRequestDTO):
     result = await AdminService.login_admin(loginRequestDTO)
     return result
 
+@admin_route.get("/admin")
+async def get_all_admins(token: str = Depends(super_admin_verification)):
+    result = await AdminService.get_all_admins()
+    return result
+
 @admin_route.put("/admin/verify")
 async def verify_admin(
     admin_id: str, 
@@ -38,6 +43,6 @@ async def verify_admin(
         )
 
 @admin_route.put("/admin/feature_access/{admin_id}")
-async def assign_feature_access(admin_id: str, feature_list: List[str]):
+async def assign_feature_access(admin_id: str, feature_list: List[str], token: str =  Depends(super_admin_verification)):
     result = await AdminService.assign_feature_access(admin_id, feature_list)
     return result
